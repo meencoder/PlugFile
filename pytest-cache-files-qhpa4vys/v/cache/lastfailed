@@ -1,0 +1,5 @@
+{
+  "tests/test_cement_volume.py::test_cylinder_open_hole_with_25pct_excess": true,
+  "tests/test_cement_volume.py::test_annulus_8835_over_5500_100ft_no_excess": true,
+  "tests/test_cement_volume.py": true
+}

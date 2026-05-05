@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wellplug"
+version = "0.1.0"
+description = "Deterministic tooling + LLM prompt scaffold for Texas RRC W-3 well-plugging compliance (TAC §3.14)."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Kareem" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "anthropic>=0.40"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wellplug"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
