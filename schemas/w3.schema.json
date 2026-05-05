@@ -1,0 +1,544 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellplug.example/schemas/w3.schema.json",
+  "title": "Texas RRC Form W-3 (Plugging Record)",
+  "description": "Schema for the Texas Railroad Commission Form W-3 (Plugging Record), with field-level source-of-truth annotations under x-source. Field-level RRC form sections are tagged via x-rrc-section. Fields whose source is `computed` are derived by the deterministic engine in wellplug.tac_3_14 and must never be operator-edited.",
+  "type": "object",
+  "properties": {
+    "api_number": {
+      "type": "string",
+      "description": "14-digit Texas API number (with dashes)",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": true,
+      "pattern": "^42-\\d{3}-\\d{5}$"
+    },
+    "operator_name": {
+      "type": "string",
+      "description": "Operator legal name as on file with RRC",
+      "x-source": "rrc_operator_db",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "operator_p5_number": {
+      "type": "string",
+      "description": "RRC P-5 organization number",
+      "x-source": "rrc_operator_db",
+      "x-rrc-section": "I",
+      "x-canonical": false,
+      "pattern": "^\\d{6}$"
+    },
+    "operator_address": {
+      "type": "string",
+      "description": "Operator mailing address",
+      "x-source": "rrc_operator_db",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "lease_name": {
+      "type": "string",
+      "description": "RRC-registered lease name",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "lease_number": {
+      "type": "string",
+      "description": "RRC lease number (varies by district)",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "well_number": {
+      "type": "string",
+      "description": "Well number on the lease",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "county": {
+      "type": "string",
+      "description": "Texas county name",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "rrc_district": {
+      "type": "string",
+      "description": "RRC district 01-10 (or 6E, 7B, 7C, 8A)",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "field_name": {
+      "type": "string",
+      "description": "RRC-recognized field name",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "I",
+      "x-canonical": false
+    },
+    "latitude": {
+      "type": "number",
+      "description": "Surface lat, decimal degrees NAD27",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "II",
+      "x-canonical": false,
+      "x-unit": "deg"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Surface long, decimal degrees NAD27",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "II",
+      "x-canonical": false,
+      "x-unit": "deg"
+    },
+    "footage_ns": {
+      "type": "string",
+      "description": "Feet from N/S section/survey line",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "II",
+      "x-canonical": false
+    },
+    "footage_ew": {
+      "type": "string",
+      "description": "Feet from E/W section/survey line",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "II",
+      "x-canonical": false
+    },
+    "section_block_survey": {
+      "type": "string",
+      "description": "Section / Block / Survey designation",
+      "x-source": "rrc_well_lookup",
+      "x-rrc-section": "II",
+      "x-canonical": false
+    },
+    "total_depth_ft": {
+      "type": "number",
+      "description": "Total measured depth at completion",
+      "x-source": "rrc_completion_record",
+      "x-rrc-section": "III",
+      "x-canonical": false,
+      "x-unit": "ft"
+    },
+    "plug_back_total_depth_ft": {
+      "type": "number",
+      "description": "Plug-back TD measured pre-plugging",
+      "x-source": "operator_observed",
+      "x-rrc-section": "III",
+      "x-canonical": false,
+      "x-unit": "ft"
+    },
+    "spud_date": {
+      "type": "string",
+      "description": "Date drilling commenced (ISO YYYY-MM-DD)",
+      "x-source": "rrc_completion_record",
+      "x-rrc-section": "III",
+      "x-canonical": false,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "completion_date": {
+      "type": "string",
+      "description": "Date well completed (ISO YYYY-MM-DD)",
+      "x-source": "rrc_completion_record",
+      "x-rrc-section": "III",
+      "x-canonical": false,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "plugging_date": {
+      "type": "string",
+      "description": "Date plugging operations performed",
+      "x-source": "operator_input",
+      "x-rrc-section": "III",
+      "x-canonical": false,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "casing_record": {
+      "type": "array",
+      "description": "All casing strings in the wellbore",
+      "x-source": "rrc_completion_record",
+      "x-rrc-section": "IV",
+      "x-canonical": false,
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "Surface / intermediate / production / liner / conductor",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false,
+            "enum": [
+              "conductor",
+              "surface",
+              "intermediate",
+              "production",
+              "liner"
+            ]
+          },
+          "od_in": {
+            "type": "number",
+            "description": "Casing outer diameter",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false,
+            "x-unit": "in"
+          },
+          "weight_lb_per_ft": {
+            "type": "number",
+            "description": "Casing weight per foot",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false,
+            "x-unit": "lb/ft"
+          },
+          "grade": {
+            "type": "string",
+            "description": "API casing grade (J-55, N-80, P-110, etc.)",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false
+          },
+          "set_depth_ft": {
+            "type": "number",
+            "description": "Shoe / set depth, MD",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false,
+            "x-unit": "ft"
+          },
+          "top_of_cement_ft": {
+            "type": "number",
+            "description": "Top of cement in annulus, MD",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false,
+            "x-unit": "ft"
+          },
+          "sacks_cemented": {
+            "type": "number",
+            "description": "Sacks of cement pumped at completion",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "IV",
+            "x-canonical": false,
+            "x-unit": "sacks"
+          }
+        },
+        "required": [
+          "kind",
+          "od_in",
+          "set_depth_ft",
+          "top_of_cement_ft"
+        ]
+      }
+    },
+    "tubing_record": {
+      "type": "array",
+      "description": "Tubing strings present pre-plugging",
+      "x-source": "operator_observed",
+      "x-rrc-section": "V",
+      "x-canonical": false,
+      "items": {
+        "type": "object",
+        "properties": {
+          "od_in": {
+            "type": "number",
+            "description": "Tubing outer diameter",
+            "x-source": "operator_observed",
+            "x-rrc-section": "V",
+            "x-canonical": false,
+            "x-unit": "in"
+          },
+          "weight_lb_per_ft": {
+            "type": "number",
+            "description": "Tubing weight per foot",
+            "x-source": "operator_observed",
+            "x-rrc-section": "V",
+            "x-canonical": false,
+            "x-unit": "lb/ft"
+          },
+          "set_depth_ft": {
+            "type": "number",
+            "description": "Tubing set depth (or 'pulled' = 0)",
+            "x-source": "operator_observed",
+            "x-rrc-section": "V",
+            "x-canonical": false,
+            "x-unit": "ft"
+          }
+        },
+        "required": [
+          "od_in",
+          "set_depth_ft"
+        ]
+      }
+    },
+    "perforations": {
+      "type": "array",
+      "description": "All perforated intervals + status",
+      "x-source": "rrc_completion_record",
+      "x-rrc-section": "VI",
+      "x-canonical": false,
+      "items": {
+        "type": "object",
+        "properties": {
+          "top_ft": {
+            "type": "number",
+            "description": "Top of perforated interval, MD",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "VI",
+            "x-canonical": false,
+            "x-unit": "ft"
+          },
+          "bottom_ft": {
+            "type": "number",
+            "description": "Bottom of perforated interval, MD",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "VI",
+            "x-canonical": false,
+            "x-unit": "ft"
+          },
+          "zone_name": {
+            "type": "string",
+            "description": "Geological zone name",
+            "x-source": "rrc_completion_record",
+            "x-rrc-section": "VI",
+            "x-canonical": false
+          },
+          "status": {
+            "type": "string",
+            "description": "producing / injection / abandoned / squeezed",
+            "x-source": "operator_input",
+            "x-rrc-section": "VI",
+            "x-canonical": false,
+            "enum": [
+              "producing",
+              "injection",
+              "abandoned",
+              "squeezed"
+            ]
+          }
+        },
+        "required": [
+          "top_ft",
+          "bottom_ft",
+          "zone_name",
+          "status"
+        ]
+      }
+    },
+    "buqw_depth_ft": {
+      "type": "number",
+      "description": "Base of usable-quality water depth",
+      "x-source": "gau_letter",
+      "x-rrc-section": "VII",
+      "x-canonical": false,
+      "x-unit": "ft"
+    },
+    "gau_letter_reference": {
+      "type": "string",
+      "description": "GAU letter date / identifier",
+      "x-source": "gau_letter",
+      "x-rrc-section": "VII",
+      "x-canonical": false
+    },
+    "buqw_protected_by_surface_casing": {
+      "type": "boolean",
+      "description": "True iff surface casing covers BUQW with cement to surface",
+      "x-source": "computed",
+      "x-rrc-section": "VII",
+      "x-canonical": false
+    },
+    "plug_record": {
+      "type": "array",
+      "description": "Ordered plug program from tac_3_14 engine",
+      "x-source": "computed",
+      "x-rrc-section": "VIII",
+      "x-canonical": false,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Plug identifier (e.g. surface_plug, perforation_X)",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false
+          },
+          "top_ft": {
+            "type": "number",
+            "description": "Top of plug, MD",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "x-unit": "ft"
+          },
+          "bottom_ft": {
+            "type": "number",
+            "description": "Bottom of plug, MD",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "x-unit": "ft"
+          },
+          "bore": {
+            "type": "string",
+            "description": "Bore the plug sits inside",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "enum": [
+              "inside_casing",
+              "open_hole",
+              "annulus"
+            ]
+          },
+          "bore_diameter_in": {
+            "type": "number",
+            "description": "Bore diameter",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "x-unit": "in"
+          },
+          "volume_ft3": {
+            "type": "number",
+            "description": "Cement volume",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "x-unit": "ft^3"
+          },
+          "volume_bbl": {
+            "type": "number",
+            "description": "Cement volume in barrels",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "x-unit": "bbl"
+          },
+          "volume_sacks": {
+            "type": "number",
+            "description": "Cement volume in sacks",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "x-unit": "sacks"
+          },
+          "excess_factor": {
+            "type": "number",
+            "description": "Excess cement factor (0 = cased, 0.25 default OH)",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false
+          },
+          "cite": {
+            "type": "string",
+            "description": "TAC paragraph authorizing the plug",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false
+          },
+          "rule_path": {
+            "type": "string",
+            "description": "general | special_buqw_uncovered",
+            "x-source": "computed",
+            "x-rrc-section": "VIII",
+            "x-canonical": false,
+            "enum": [
+              "general",
+              "special_buqw_uncovered"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "top_ft",
+          "bottom_ft",
+          "bore",
+          "bore_diameter_in",
+          "volume_ft3",
+          "volume_bbl",
+          "volume_sacks",
+          "excess_factor",
+          "cite",
+          "rule_path"
+        ]
+      }
+    },
+    "plug_program_rule_paths": {
+      "type": "array",
+      "description": "Distinct rule paths exercised (general / special_buqw_uncovered)",
+      "x-source": "computed",
+      "x-rrc-section": "VIII",
+      "x-canonical": false,
+      "items": {
+        "type": "string",
+        "enum": [
+          "general",
+          "special_buqw_uncovered"
+        ]
+      }
+    },
+    "surface_restoration_narrative": {
+      "type": "string",
+      "description": "Narrative of surface restoration work (Phase 1C drafter)",
+      "x-source": "operator_input",
+      "x-rrc-section": "IX",
+      "x-canonical": false
+    },
+    "operator_signature_name": {
+      "type": "string",
+      "description": "Name of operator representative",
+      "x-source": "operator_certification",
+      "x-rrc-section": "X",
+      "x-canonical": false
+    },
+    "operator_title": {
+      "type": "string",
+      "description": "Title of signing representative",
+      "x-source": "operator_certification",
+      "x-rrc-section": "X",
+      "x-canonical": false
+    },
+    "certification_date": {
+      "type": "string",
+      "description": "Date of operator certification",
+      "x-source": "operator_certification",
+      "x-rrc-section": "X",
+      "x-canonical": false,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "cementing_company": {
+      "type": "string",
+      "description": "Name of cementing service company",
+      "x-source": "operator_certification",
+      "x-rrc-section": "X",
+      "x-canonical": false
+    }
+  },
+  "required": [
+    "api_number",
+    "operator_name",
+    "operator_p5_number",
+    "operator_address",
+    "lease_name",
+    "well_number",
+    "county",
+    "rrc_district",
+    "latitude",
+    "longitude",
+    "total_depth_ft",
+    "plugging_date",
+    "casing_record",
+    "perforations",
+    "buqw_depth_ft",
+    "gau_letter_reference",
+    "buqw_protected_by_surface_casing",
+    "plug_record",
+    "operator_signature_name",
+    "operator_title",
+    "certification_date"
+  ],
+  "additionalProperties": false
+}

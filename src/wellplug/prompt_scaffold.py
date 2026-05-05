@@ -58,6 +58,9 @@ from .geometry import (
     Perforation,
     Wellbore,
 )
+from .lookups import Fetcher, FetcherError, MockFetcher
+from .narrative import transcript_to_narrative
+from .prefill import prefill_w3
 from .tac_3_14 import compute_plug_program
 
 
@@ -81,8 +84,16 @@ HARD RULES — FOLLOW THESE WITHOUT EXCEPTION
    Reporting an un-tool-derived volume is a regulatory error.
 
 2. NEVER decide where plugs go based on memory of §3.14. Always call
-   `compute_plug_program` with the parsed wellbore. The deterministic rule
-   engine is the single source of truth for plug placement.
+   `compute_plug_program` with the parsed wellbore — or, preferably, call
+   `prefill_w3_form` with the API number to do the lookup AND the rule
+   computation in one step. The deterministic rule engine is the single
+   source of truth for plug placement.
+
+2a. PREFER `prefill_w3_form` over `compute_plug_program` whenever an API
+    number is available. It pulls operator info, GAU letter, completion
+    record, and computes the plug program in a single call. Only fall
+    back to `compute_plug_program` when the operator hands you raw
+    wellbore geometry without an API number.
 
 3. If the operator's narrative is missing any of these, STOP and ask:
    - API number, operator, lease/well, county
@@ -98,7 +109,13 @@ HARD RULES — FOLLOW THESE WITHOUT EXCEPTION
 
 5. Always note any TAC §3.14 special case that fires (e.g. continuous column
    to surface for BUQW not covered by surface casing) explicitly in the
-   narrative — do not silently apply it.
+   narrative -- do not silently apply it.
+
+6. For Section IX surface-restoration text, prefer
+   `draft_surface_restoration_narrative` over hand-writing prose. The
+   tool extracts facts deterministically from the operator's voice
+   transcript and inserts clearly-flagged placeholders for missing
+   slots; pass the warnings back to the operator for review.
 
 UNIT CONVENTIONS
 ================
@@ -247,13 +264,99 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             ],
         },
     },
+    {
+        "name": "lookup_well_by_api",
+        "description": (
+            "Query authoritative RRC sources (well master, operator P-5, "
+            "GAU letter, completion record) for one well. Returns the raw "
+            "lookup payloads — useful when the operator wants to verify a "
+            "single fact without producing a full W-3. For drafting a W-3, "
+            "prefer `prefill_w3_form` instead."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "api_number": {
+                    "type": "string",
+                    "description": "14-digit Texas API number (e.g. '42-371-30001')",
+                },
+            },
+            "required": ["api_number"],
+        },
+    },
+    {
+        "name": "prefill_w3_form",
+        "description": (
+            "End-to-end W-3 prefill: pull operator + well + GAU + completion "
+            "data from authoritative sources, run the deterministic TAC "
+            "§3.14 plug-program engine, and return a populated W-3 form "
+            "object plus a list of FieldConflict warnings (operator-supplied "
+            "values that disagree with authoritative sources). Use this as "
+            "the FIRST tool call whenever an API number is available."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "api_number": {
+                    "type": "string",
+                    "description": "14-digit Texas API number (e.g. '42-371-30001')",
+                },
+                "plugging_date": {
+                    "type": "string",
+                    "description": "ISO-formatted date plugging was performed (YYYY-MM-DD)",
+                },
+                "operator_overrides": {
+                    "type": "object",
+                    "description": (
+                        "Optional operator-supplied values: certification "
+                        "fields (operator_signature_name, operator_title, "
+                        "certification_date, cementing_company); plus a "
+                        "perforations array with status updates "
+                        "(top_ft, zone_name, status)."
+                    ),
+                },
+            },
+            "required": ["api_number"],
+        },
+    },
+    {
+        "name": "draft_surface_restoration_narrative",
+        "description": (
+            "Convert an operator's free-form voice transcript of surface "
+            "restoration work into the formal Section IX narrative for "
+            "Form W-3. Uses a deterministic regex extractor; missing "
+            "slots are flagged in the warnings list. Optionally takes "
+            "well_context (api_number, lease_name, well_number, county) "
+            "for the narrative opener -- pull these via prefill_w3_form "
+            "or lookup_well_by_api when an API number is available."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "transcript": {
+                    "type": "string",
+                    "description": "Operator's voice/text dictation of surface restoration work performed",
+                },
+                "well_context": {
+                    "type": "object",
+                    "description": "Optional: api_number, lease_name, well_number, county for narrative opener",
+                },
+                "fallback_year": {
+                    "type": "integer",
+                    "description": "Year to use if the transcript names a month and day but no year",
+                },
+            },
+            "required": ["transcript"],
+        },
+    },
 ]
+
 
 
 # ---- dispatcher -------------------------------------------------------------
 
 def _serialize(obj: Any) -> Any:
-    """Recursively dataclass → dict for JSON-friendly tool results."""
+    """Recursively dataclass -> dict for JSON-friendly tool results."""
     if is_dataclass(obj) and not isinstance(obj, type):
         return {k: _serialize(v) for k, v in asdict(obj).items()}
     if isinstance(obj, (list, tuple)):
@@ -332,5 +435,50 @@ def dispatch_tool_call(name: str, args: dict[str, Any]) -> str:
         well = _build_wellbore(args)
         plugs = compute_plug_program(well)
         return json.dumps(_serialize(plugs))
+
+    if name == "lookup_well_by_api":
+        fetcher = MockFetcher()
+        api = args["api_number"]
+        try:
+            well = fetcher.lookup_well_by_api(api)
+            p5 = fetcher.operator_p5_for_api(api)
+            operator = fetcher.lookup_operator(p5)
+            gau = fetcher.lookup_gau(api)
+            completion = fetcher.lookup_completion(api)
+        except FetcherError as e:
+            return json.dumps({"error": str(e)})
+        return json.dumps({
+            "well": well, "operator": operator,
+            "gau": gau, "completion": completion,
+        })
+
+    if name == "prefill_w3_form":
+        fetcher = MockFetcher()
+        try:
+            form, conflicts = prefill_w3(
+                api_number=args["api_number"],
+                fetcher=fetcher,
+                operator_overrides=args.get("operator_overrides"),
+                plugging_date=args.get("plugging_date"),
+            )
+        except FetcherError as e:
+            return json.dumps({"error": str(e)})
+        return json.dumps({
+            "form": form.to_dict(),
+            "missing_required": sorted(form.missing_required()),
+            "conflicts": [_serialize(c) for c in conflicts],
+        })
+
+    if name == "draft_surface_restoration_narrative":
+        narrative, facts, warnings = transcript_to_narrative(
+            args["transcript"],
+            well_context=args.get("well_context"),
+            fallback_year=args.get("fallback_year"),
+        )
+        return json.dumps({
+            "narrative": narrative,
+            "facts": _serialize(facts),
+            "warnings": [_serialize(w) for w in warnings],
+        })
 
     raise ValueError(f"Unknown tool: {name}")
