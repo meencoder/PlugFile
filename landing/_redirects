@@ -1,0 +1,5 @@
+# Canonicalize www -> apex
+https://www.trycaprock.com/* https://trycaprock.com/:splat 301!
+
+# Clean URLs: /for-engineers -> /for-engineers.html
+/for-engineers /for-engineers.html 200

@@ -1,0 +1,13 @@
+/*
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; form-action https://buy.stripe.com; base-uri 'self'
+
+/*.html
+  Cache-Control: public, max-age=300, must-revalidate
+
+/*.svg
+  Cache-Control: public, max-age=86400
