@@ -1,5 +1,6 @@
 # Canonicalize www -> apex
-https://www.trycaprock.com/* https://trycaprock.com/:splat 301!
+https://www.kaproq.com/* https://kaproq.com/:splat 301!
 
-# Clean URLs: /for-engineers -> /for-engineers.html
-/for-engineers /for-engineers.html 200
+# Legacy domain — redirect old trycaprock.com traffic to new domain
+https://trycaprock.com/* https://kaproq.com/:splat 301!
+https://www.trycaprock.com/* https://kaproq.com/:splat 301!
