@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Caprock — W-3 compliance, automated</title>
-<meta name="description" content="Caprock automates Texas RRC Form W-3 plugging-record filing. Deterministic TAC §3.14 cement-volume math, API-keyed pre-fill from authoritative RRC sources, voice-to-narrative for surface restoration. Reserve early access for $1.">
-<meta property="og:title" content="Caprock — W-3 compliance, automated">
-<meta property="og:description" content="The plugging-record assistant that won't hallucinate cement volumes.">
+<title>Caprock — For engineers</title>
+<meta name="description" content="The deterministic-core architecture behind Caprock's W-3 compliance automation. Plain-Python rule engine, 33-field schema, 208 passing tests.">
 <meta name="theme-color" content="#1F2937">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   *,*::before,*::after { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     color: #1F2937;
     background: #FFFFFF;
     line-height: 1.6;
@@ -27,7 +28,7 @@
   section { padding: 80px 0; }
   section.dark { background: #1F2937; color: #F9FAFB; }
   section.cream { background: #FEF3C7; }
-  h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 18px; }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.022em; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 18px; }
   h1 { font-size: 56px; }
   h2 { font-size: 36px; }
   h3 { font-size: 20px; }
@@ -148,19 +149,21 @@
 
 <header>
   <div class="nav">
-    <a href="#" class="brand">
+    <a href="/" class="brand">
       <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <g transform="translate(75, 75)">
           <circle cx="0" cy="0" r="60" fill="#1F2937"/>
-          <line x1="-44" y1="-34" x2="44" y2="-34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="-48" y1="-26" x2="48" y2="-26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="-48" y1="26" x2="48" y2="26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="-44" y1="34" x2="44" y2="34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <rect x="-10" y="-50" width="20" height="100" fill="#0F172A"/>
-          <rect x="-10" y="-36" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="-5" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="26" width="20" height="10" fill="#D97706"/>
-          <rect x="-15" y="-54" width="30" height="5" fill="#FCD34D"/>
+          <line x1="-44" y1="-34" x2="44" y2="-34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-48" y1="-26" x2="48" y2="-26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-48" y1="26" x2="48" y2="26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-44" y1="34" x2="44" y2="34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <rect x="-11" y="-50" width="22" height="100" fill="#0A0E14"/>
+          <rect x="-12" y="-50" width="2" height="100" fill="#E5E7EB"/>
+          <rect x="10" y="-50" width="2" height="100" fill="#E5E7EB"/>
+          <rect x="-11" y="-36" width="22" height="11" fill="#D97706"/>
+          <rect x="-11" y="-5.5" width="22" height="11" fill="#D97706"/>
+          <rect x="-11" y="25" width="22" height="11" fill="#D97706"/>
+          <rect x="-16" y="-54" width="32" height="5" fill="#FCD34D"/>
         </g>
       </svg>
       Caprock
@@ -181,7 +184,7 @@
     <span class="eyebrow">For Texas oil &amp; gas operators</span>
     <h1>W-3 compliance, automated.</h1>
     <p class="lead">
-      Caprock listens during the plug, drafts your W-3 + W-15, validates every cement volume against TAC §3.14, and submits to the RRC. Built on a deterministic rule engine that won't hallucinate volumes — and an LLM that knows when to ask.
+      Caprock listens during the plug, drafts your W-3, validates every cement volume against TAC §3.14, and produces a print-ready PDF for the District Office. W-3 is still paper-only at RRC; LoneSTAR onboarding for W-3 (when it ships) plugs in via a one-adapter swap. Built on a deterministic rule engine that won't hallucinate volumes — and an LLM that knows when to ask.
     </p>
     <div class="cta-row">
       <a href="#reserve" class="btn btn-primary">Reserve early access — $1</a>
@@ -248,7 +251,7 @@
 <section class="cream">
   <div class="wrap">
     <div class="trust">
-      <div class="stat"><div class="num">208</div><div class="label">PASSING TESTS</div></div>
+      <div class="stat"><div class="num">238</div><div class="label">PASSING TESTS</div></div>
       <div class="stat"><div class="num">0</div><div class="label">HALLUCINATED VOLUMES</div></div>
       <div class="stat"><div class="num">33</div><div class="label">W-3 FIELDS WITH SOURCE-OF-TRUTH</div></div>
       <div class="stat"><div class="num">3</div><div class="label">WEEKENDS TO PHASE 1</div></div>
@@ -279,11 +282,11 @@
         <span class="tag">SUITE</span>
         <h3>Compliance Suite</h3>
         <div class="price">$499<small>&nbsp;/mo</small></div>
-        <p style="color: #6B7280; font-size: 14px; margin: 0;">Everything in Core, plus W-15 + RRC submission.</p>
+        <p style="color: #6B7280; font-size: 14px; margin: 0;">Everything in Core, plus inspector review + audit trail.</p>
         <ul>
           <li>Everything in Compliance Core</li>
-          <li>W-15 (Cementing &amp; Casing Report) auto-generation</li>
-          <li>Direct RRC e-filing submission with audit trail</li>
+          <li>Per-filing review by a former RRC District inspector before you sign</li>
+          <li>Audit-trail page appended to every PDF: inputs, formulas, §3.14 paragraph references</li>
           <li>District-office liaison hand-off (corrections workflow)</li>
           <li>Priority Slack/phone support</li>
         </ul>
@@ -315,19 +318,17 @@
 <footer>
   <div class="wrap row">
     <div class="brand" style="font-size: 16px;">
-      <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 24px; height: 24px;">
-        <g transform="translate(75, 75)">
-          <circle cx="0" cy="0" r="60" fill="#F9FAFB"/>
-          <line x1="-44" y1="-34" x2="44" y2="-34" stroke="#6B7280" stroke-width="1.5"/>
-          <line x1="-48" y1="-26" x2="48" y2="-26" stroke="#6B7280" stroke-width="1.5"/>
-          <line x1="-48" y1="26" x2="48" y2="26" stroke="#6B7280" stroke-width="1.5"/>
-          <line x1="-44" y1="34" x2="44" y2="34" stroke="#6B7280" stroke-width="1.5"/>
-          <rect x="-10" y="-50" width="20" height="100" fill="#1F2937"/>
-          <rect x="-10" y="-36" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="-5" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="26" width="20" height="10" fill="#D97706"/>
-        </g>
-      </svg>
+      <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 26px; height: 26px;">
+          <g transform="translate(75, 75)">
+            <circle cx="0" cy="0" r="60" fill="#F4F1EA"/>
+            <rect x="-11" y="-50" width="22" height="100" fill="#1F2937"/>
+            <rect x="-12" y="-50" width="2" height="100" fill="#9CA3AF"/>
+            <rect x="10" y="-50" width="2" height="100" fill="#9CA3AF"/>
+            <rect x="-11" y="-36" width="22" height="11" fill="#D97706"/>
+            <rect x="-11" y="-5.5" width="22" height="11" fill="#D97706"/>
+            <rect x="-11" y="25" width="22" height="11" fill="#D97706"/>
+          </g>
+        </svg>
       Caprock
     </div>
     <div>

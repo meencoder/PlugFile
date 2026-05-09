@@ -4,105 +4,233 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Caprock — Stop hand-typing W-3s</title>
-<meta name="description" content="Caprock drafts your W-3 and W-15 from a voice memo. Auto-fills operator and well info from RRC records. Cross-checks every cement volume against TAC §3.14. Refundable $1 deposit locks founder pricing.">
+<meta name="description" content="Caprock drafts your Texas RRC Form W-3 from a voice memo. Auto-fills operator and well info from RRC records. Cross-checks every cement volume against TAC §3.14. Print-ready PDF your district office accepts in duplicate. Refundable $1 deposit reserves founder pricing.">
 <meta property="og:title" content="Caprock — Stop hand-typing W-3s">
 <meta property="og:description" content="The plugging-record assistant that won't let cement volumes slip past your district inspector.">
 <meta name="theme-color" content="#1F2937">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   *,*::before,*::after { box-sizing: border-box; }
+  :root {
+    --ink: #1A1A1A;
+    --ink-soft: #4A4A4A;
+    --ink-faded: #777;
+    --bg: #FDFBF7;
+    --bg-cream: #F6EFDC;
+    --bg-card: #FFFFFF;
+    --border: #E8E4DA;
+    --accent: #C2410C;
+    --accent-hover: #9A330A;
+    --accent-bright: #D97706;
+    --gold: #FCD34D;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  }
   html { scroll-behavior: smooth; }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
-    color: #1F2937; background: #FFFFFF;
-    line-height: 1.6; -webkit-font-smoothing: antialiased;
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
   }
-  a { color: #B45309; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-  section { padding: 80px 0; }
-  section.dark { background: #1F2937; color: #F9FAFB; }
-  section.cream { background: #FEF3C7; }
-  h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 18px; }
-  h1 { font-size: 56px; }
-  h2 { font-size: 36px; }
-  h3 { font-size: 20px; }
-  p.lead { font-size: 20px; color: #4B5563; max-width: 650px; }
-  section.dark p.lead { color: #D1D5DB; }
-  .eyebrow { display: inline-block; font-size: 11px; font-weight: 600;
-    letter-spacing: 3px; text-transform: uppercase; color: #B45309; margin-bottom: 12px; }
-  header { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(8px); border-bottom: 1px solid #E5E7EB; }
-  .nav { display: flex; justify-content: space-between; align-items: center;
-    padding: 16px 24px; max-width: 1100px; margin: 0 auto; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; color: #1F2937; }
-  .brand svg { width: 32px; height: 32px; }
-  nav ul { display: flex; gap: 28px; list-style: none; padding: 0; margin: 0; font-size: 14px; }
-  nav a { color: #4B5563; }
-  .btn { display: inline-block; padding: 14px 26px; border-radius: 8px;
-    font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.1s; border: none; text-align: center; }
-  .btn-primary { background: #D97706; color: #FFFFFF; }
-  .btn-primary:hover { background: #B45309; text-decoration: none; transform: translateY(-1px); }
-  .btn-ghost { background: transparent; color: inherit; border: 1.5px solid currentColor; padding: 12px 24px; }
-  .hero { padding: 120px 0 100px; text-align: center; }
-  .hero h1 { max-width: 820px; margin: 0 auto 24px; }
-  .hero p.lead { margin: 0 auto 36px; }
-  .hero .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .hero .deposit-note { margin-top: 18px; font-size: 14px; color: #6B7280; }
-  .grid { display: grid; gap: 32px; }
-  .grid-3 { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 800px) { .grid-3 { grid-template-columns: 1fr; } }
-  .feature { padding: 24px; border-radius: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; }
-  .feature .icon { display: inline-flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px; border-radius: 10px; background: #FEF3C7;
-    color: #B45309; font-weight: 600; margin-bottom: 14px; }
-  .feature h3 { margin-bottom: 8px; }
-  .feature p { color: #4B5563; margin: 0; font-size: 15px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+  section { padding: 96px 0; border-top: 1px solid var(--border); }
+  section:first-of-type { border-top: none; }
+  section.dark { background: #14191F; color: #F4F1EA; border-top-color: transparent; }
+  section.cream { background: var(--bg-cream); border-top-color: transparent; }
+
+  h1, h2, h3 {
+    font-family: var(--serif); font-weight: 500;
+    letter-spacing: -0.022em; line-height: 1.1; margin: 0 0 22px;
+    font-variation-settings: "opsz" 32;
+  }
+  h1 { font-size: clamp(40px, 5.6vw, 68px); font-variation-settings: "opsz" 96; }
+  h2 { font-size: clamp(30px, 3.6vw, 44px); font-variation-settings: "opsz" 72; }
+  h3 { font-size: 21px; font-variation-settings: "opsz" 32; }
+  p.lead {
+    font-family: var(--sans); font-size: clamp(18px, 1.4vw, 21px);
+    color: var(--ink-soft); max-width: 640px; line-height: 1.55;
+  }
+  section.dark p.lead { color: #C7BDA8; }
+  .eyebrow {
+    display: inline-block; font-family: var(--mono);
+    font-size: 11px; font-weight: 500; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 18px;
+  }
+  section.dark .eyebrow { color: var(--gold); }
+
+  /* header */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(253, 251, 247, 0.92);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 28px; max-width: 1080px; margin: 0 auto;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 11px;
+    font-family: var(--serif); font-weight: 600;
+    font-size: 22px; letter-spacing: -0.01em; color: var(--ink);
+  }
+  .brand svg { width: 36px; height: 36px; }
+  nav ul { display: flex; gap: 32px; list-style: none; padding: 0; margin: 0; font-size: 14.5px; }
+  nav a { color: var(--ink-soft); }
+  nav a:hover { color: var(--ink); text-decoration: none; }
+
+  /* CTAs */
+  .btn {
+    display: inline-block; padding: 15px 28px;
+    font-family: var(--sans); font-weight: 500; font-size: 16px;
+    border-radius: 6px; cursor: pointer; border: none; text-align: center;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .btn-primary { background: var(--accent); color: #FFFFFF; }
+  .btn-primary:hover { background: var(--accent-hover); text-decoration: none; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); padding: 13px 26px; }
+  .btn-ghost:hover { background: var(--ink); color: #FFFFFF; text-decoration: none; }
+  section.dark .btn-ghost { color: #F4F1EA; border-color: #F4F1EA; }
+  section.dark .btn-ghost:hover { background: #F4F1EA; color: #14191F; }
+
+  /* hero */
+  .hero { padding: 80px 0 110px; text-align: center; border-top: none; }
+  .hero .lockup { display: flex; flex-direction: column; align-items: center; margin-bottom: 50px; }
+  .hero .lockup svg { width: 96px; height: 96px; }
+  .hero .lockup .wordmark {
+    font-family: var(--serif); font-weight: 600; font-size: 44px;
+    letter-spacing: -0.025em; color: var(--ink); margin-top: 20px;
+    font-variation-settings: "opsz" 96;
+  }
+  .hero .lockup .tagline {
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.22em; color: var(--ink-faded);
+    text-transform: uppercase; margin-top: 8px;
+  }
+  .hero h1 { max-width: 880px; margin: 0 auto 26px; }
+  .hero p.lead { margin: 0 auto 40px; }
+  .hero .cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .hero .deposit-note {
+    margin-top: 22px; font-size: 13.5px; color: var(--ink-faded);
+    font-family: var(--mono); letter-spacing: 0.04em;
+  }
+
+  /* features grid */
+  .grid-3 { display: grid; gap: 28px; grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 820px) { .grid-3 { grid-template-columns: 1fr; } }
+  .feature {
+    padding: 32px 28px 30px; border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border);
+  }
+  .feature .num {
+    font-family: var(--serif); font-size: 32px; font-weight: 500;
+    color: var(--accent); line-height: 1; margin-bottom: 14px;
+    font-variation-settings: "opsz" 144;
+  }
+  .feature h3 { margin-bottom: 10px; font-size: 19px; }
+  .feature p { color: var(--ink-soft); margin: 0; font-size: 15.5px; line-height: 1.6; }
 
   /* timeline */
-  .timeline { max-width: 720px; margin: 32px auto 0; position: relative; padding-left: 28px; }
-  .timeline::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: #D97706; }
-  .step { position: relative; margin-bottom: 28px; }
-  .step::before { content: ""; position: absolute; left: -27px; top: 6px; width: 14px; height: 14px;
-    border-radius: 50%; background: #D97706; border: 3px solid #FEF3C7; }
-  .step .when { font-size: 13px; font-weight: 600; color: #B45309; letter-spacing: 0.5px; }
-  .step h4 { margin: 4px 0 6px; font-size: 17px; font-weight: 600; color: #1F2937; }
-  .step p { margin: 0; color: #4B5563; font-size: 15px; line-height: 1.55; }
+  .timeline {
+    max-width: 720px; margin: 40px auto 0;
+    position: relative; padding-left: 32px;
+  }
+  .timeline::before {
+    content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px;
+    width: 2px; background: var(--accent); opacity: 0.85;
+  }
+  .step { position: relative; margin-bottom: 32px; padding-left: 8px; }
+  .step::before {
+    content: ""; position: absolute; left: -31px; top: 6px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); border: 4px solid var(--bg);
+  }
+  .step .when {
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .step h4 {
+    margin: 6px 0 6px; font-family: var(--serif); font-weight: 500;
+    font-size: 21px; line-height: 1.3; color: var(--ink);
+  }
+  .step p { margin: 0; color: var(--ink-soft); font-size: 16px; line-height: 1.55; }
 
   /* trust */
-  .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; }
-  @media (max-width: 700px) { .trust { grid-template-columns: repeat(2, 1fr); } }
-  .stat { padding: 16px 0; }
-  .stat .num { font-size: 28px; font-weight: 700; color: #D97706; line-height: 1.2; }
-  .stat .label { font-size: 13px; color: #6B7280; letter-spacing: 0.5px; margin-top: 8px; }
-
-  /* credibility callout */
-  .callout { background: #F9FAFB; border-left: 4px solid #D97706; padding: 28px 32px; border-radius: 8px;
-    max-width: 760px; margin: 36px auto 0; font-size: 17px; color: #374151; line-height: 1.7; }
-  .callout strong { color: #1F2937; }
+  .callout {
+    background: var(--bg-card); border-left: 3px solid var(--accent);
+    padding: 30px 36px; border-radius: 4px;
+    max-width: 800px; margin: 40px auto 0;
+    font-size: 17.5px; color: var(--ink); line-height: 1.7;
+  }
+  .callout strong { color: var(--ink); font-weight: 600; }
+  .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; margin-top: 60px; }
+  @media (max-width: 760px) { .trust { grid-template-columns: repeat(2, 1fr); } }
+  .stat { padding: 8px 0; }
+  .stat .num {
+    font-family: var(--serif); font-size: 26px; font-weight: 500;
+    color: var(--accent); line-height: 1.2;
+    font-variation-settings: "opsz" 144;
+  }
+  .stat .label {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+    color: var(--ink-faded); letter-spacing: 0.1em; margin-top: 10px;
+    text-transform: uppercase;
+  }
 
   /* pricing */
-  .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 800px; margin: 32px auto 0; }
-  @media (max-width: 700px) { .pricing { grid-template-columns: 1fr; } }
-  .tier { background: #FFFFFF; padding: 36px 32px; border-radius: 16px;
-    border: 1px solid #E5E7EB; position: relative; }
-  .tier.featured { border: 2px solid #D97706; }
-  .tier .tag { position: absolute; top: -12px; left: 32px; background: #D97706; color: #FFFFFF;
-    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: 1px; }
-  .tier h3 { font-size: 22px; }
-  .tier .price { font-size: 44px; font-weight: 700; margin: 12px 0 4px; color: #1F2937; }
-  .tier .price small { font-size: 16px; font-weight: 500; color: #6B7280; }
-  .tier ul { list-style: none; padding: 0; margin: 24px 0; }
-  .tier li { padding: 8px 0 8px 24px; position: relative; font-size: 15px; color: #374151; }
-  .tier li::before { content: ""; position: absolute; left: 0; top: 14px;
-    width: 12px; height: 6px; border-left: 2px solid #D97706;
-    border-bottom: 2px solid #D97706; transform: rotate(-45deg); }
+  .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; max-width: 820px; margin: 40px auto 0; }
+  @media (max-width: 720px) { .pricing { grid-template-columns: 1fr; } }
+  .tier {
+    background: var(--bg-card); padding: 38px 34px;
+    border-radius: 12px; border: 1px solid var(--border); position: relative;
+  }
+  .tier.featured { border: 2px solid var(--accent); }
+  .tier .tag {
+    position: absolute; top: -13px; left: 32px;
+    background: var(--accent); color: #FFFFFF;
+    padding: 5px 12px; border-radius: 4px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .tier h3 { font-size: 24px; margin-bottom: 4px; }
+  .tier .sub { color: var(--ink-faded); font-size: 14.5px; margin: 0 0 16px; }
+  .tier .price {
+    font-family: var(--serif); font-size: 52px; font-weight: 500;
+    margin: 4px 0 4px; color: var(--ink); line-height: 1;
+    font-variation-settings: "opsz" 144;
+  }
+  .tier .price small {
+    font-family: var(--sans); font-size: 17px; font-weight: 400;
+    color: var(--ink-faded);
+  }
+  .tier ul { list-style: none; padding: 0; margin: 28px 0; }
+  .tier li {
+    padding: 9px 0 9px 26px; position: relative;
+    font-size: 15.5px; color: var(--ink-soft); line-height: 1.55;
+  }
+  .tier li::before {
+    content: ""; position: absolute; left: 0; top: 16px;
+    width: 12px; height: 6px;
+    border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
+    transform: rotate(-45deg);
+  }
   .tier .btn { width: 100%; }
 
-  footer { background: #0F172A; color: #9CA3AF; padding: 40px 0; font-size: 14px; }
-  footer .row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-  footer .brand { color: #F9FAFB; }
-  footer a { color: #D1D5DB; }
+  footer {
+    background: #0F1216; color: #9CA3AF; padding: 44px 0; font-size: 14px;
+  }
+  footer .row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; }
+  footer .brand { color: #F4F1EA; font-size: 17px; }
+  footer a { color: #C7BDA8; }
+  footer a:hover { color: #FFF; }
 </style>
 </head>
 <body>
@@ -113,15 +241,17 @@
       <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <g transform="translate(75, 75)">
           <circle cx="0" cy="0" r="60" fill="#1F2937"/>
-          <line x1="-44" y1="-34" x2="44" y2="-34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="-48" y1="-26" x2="48" y2="-26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="-48" y1="26" x2="48" y2="26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="-44" y1="34" x2="44" y2="34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round"/>
-          <rect x="-10" y="-50" width="20" height="100" fill="#0F172A"/>
-          <rect x="-10" y="-36" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="-5" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="26" width="20" height="10" fill="#D97706"/>
-          <rect x="-15" y="-54" width="30" height="5" fill="#FCD34D"/>
+          <line x1="-44" y1="-34" x2="44" y2="-34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-48" y1="-26" x2="48" y2="-26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-48" y1="26" x2="48" y2="26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-44" y1="34" x2="44" y2="34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <rect x="-11" y="-50" width="22" height="100" fill="#0A0E14"/>
+          <rect x="-12" y="-50" width="2" height="100" fill="#E5E7EB"/>
+          <rect x="10" y="-50" width="2" height="100" fill="#E5E7EB"/>
+          <rect x="-11" y="-36" width="22" height="11" fill="#D97706"/>
+          <rect x="-11" y="-5.5" width="22" height="11" fill="#D97706"/>
+          <rect x="-11" y="25" width="22" height="11" fill="#D97706"/>
+          <rect x="-16" y="-54" width="32" height="5" fill="#FCD34D"/>
         </g>
       </svg>
       Caprock
@@ -129,9 +259,9 @@
     <nav>
       <ul>
         <li><a href="#how">How it works</a></li>
-        <li><a href="#trust">Why the math is right</a></li>
+        <li><a href="#trust">Trust</a></li>
         <li><a href="#pricing">Pricing</a></li>
-        <li><a href="#reserve" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">Reserve&nbsp;access</a></li>
+        <li><a href="#reserve" class="btn btn-primary" style="padding: 9px 18px; font-size: 14px;">Reserve&nbsp;access</a></li>
       </ul>
     </nav>
   </div>
@@ -139,16 +269,36 @@
 
 <section class="hero">
   <div class="wrap">
+    <div class="lockup">
+      <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-label="Caprock logo">
+        <g transform="translate(75, 75)">
+          <circle cx="0" cy="0" r="60" fill="#1F2937"/>
+          <line x1="-44" y1="-34" x2="44" y2="-34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-48" y1="-26" x2="48" y2="-26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-48" y1="26" x2="48" y2="26" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <line x1="-44" y1="34" x2="44" y2="34" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <rect x="-11" y="-50" width="22" height="100" fill="#0A0E14"/>
+          <rect x="-12" y="-50" width="2" height="100" fill="#E5E7EB"/>
+          <rect x="10" y="-50" width="2" height="100" fill="#E5E7EB"/>
+          <rect x="-11" y="-36" width="22" height="11" fill="#D97706"/>
+          <rect x="-11" y="-5.5" width="22" height="11" fill="#D97706"/>
+          <rect x="-11" y="25" width="22" height="11" fill="#D97706"/>
+          <rect x="-16" y="-54" width="32" height="5" fill="#FCD34D"/>
+        </g>
+      </svg>
+      <div class="wordmark">Caprock</div>
+      <div class="tagline">W-3 compliance, automated</div>
+    </div>
     <span class="eyebrow">For Texas oil &amp; gas operators</span>
-    <h1>Stop hand-typing W-3s. Stop chasing district-office corrections.</h1>
+    <h1>From plug to filed.<br>Without re-typing a thing.</h1>
     <p class="lead">
-      Caprock listens while you plug, drafts the W-3 and W-15, double-checks every cement volume against the rule, and files with the RRC. Your district inspector sees a clean filing the first time.
+      Caprock listens while you plug, drafts your W-3, and double-checks every cement volume against the rule. You get a print-ready PDF your District Office accepts in duplicate — clean, signed, and walked in the first time.
     </p>
     <div class="cta-row">
       <a href="#reserve" class="btn btn-primary">Reserve early access — $1</a>
-      <a href="#how" class="btn btn-ghost" style="color: #1F2937;">See how it fits your day</a>
+      <a href="#how" class="btn btn-ghost">See how it fits your day</a>
     </div>
-    <p class="deposit-note">$1 fully refundable. Locks your launch-tier price ($299/mo) for 12 months.</p>
+    <p class="deposit-note">$1 fully refundable · Locks $299/mo founder pricing for 12 months</p>
   </div>
 </section>
 
@@ -156,20 +306,20 @@
   <div class="wrap">
     <span class="eyebrow">What you stop doing</span>
     <h2>Three jobs Caprock takes off your plate.</h2>
-    <p class="lead">A W-3 today is 4-12 hours of re-typing operator info, looking up GAU letters, hand-calculating cement volumes, and writing Section IX from memory. Caprock collapses that into one workflow that runs while your truck cools off.</p>
-    <div class="grid grid-3" style="margin-top: 48px;">
+    <p class="lead">A W-3 today is 4–12 hours of re-typing operator info, looking up GAU letters, hand-calculating cement volumes, and writing Section IX from memory. Caprock collapses that into one workflow that runs while your truck cools off.</p>
+    <div class="grid-3" style="margin-top: 56px;">
       <div class="feature">
-        <div class="icon">①</div>
+        <div class="num">01</div>
         <h3>From plug to filing in under 30 minutes</h3>
         <p>You finish the plug, dictate a 2-minute voice memo on the way home, and Caprock has a complete W-3 waiting in your review queue by the time you walk in the door.</p>
       </div>
       <div class="feature">
-        <div class="icon">②</div>
+        <div class="num">02</div>
         <h3>Auto-fills operator, well, and BUQW from RRC records</h3>
         <p>Type the API number — Caprock pulls your P-5 record, the well master file, the GAU letter, and the completion record. You stop double-typing data the RRC already has on you.</p>
       </div>
       <div class="feature">
-        <div class="icon">③</div>
+        <div class="num">03</div>
         <h3>Talk through the plug; we draft the paperwork</h3>
         <p>Dictate what you did at the wellsite — casing cut depth, cap material, surface restoration. Caprock turns it into the Section IX narrative your district expects, in their format.</p>
       </div>
@@ -188,7 +338,7 @@
         <p>Same morning routine. Caprock isn't on site, doesn't need to be.</p>
       </div>
       <div class="step">
-        <div class="when">DURING THE DAY</div>
+        <div class="when">During the day</div>
         <h4>You record a voice memo as each plug stage finishes.</h4>
         <p>Two minutes per stage. Phone in your shirt pocket. No app to babysit.</p>
       </div>
@@ -199,15 +349,24 @@
       </div>
       <div class="step">
         <div class="when">6:00 PM</div>
-        <h4>Caprock has drafted the W-3 and W-15.</h4>
+        <h4>Caprock has drafted the W-3.</h4>
         <p>Every cement volume cross-checked against §3.14. The review queue flags anything ambiguous so you can spot-check in five minutes.</p>
       </div>
       <div class="step">
-        <div class="when">8:00 AM TOMORROW</div>
-        <h4>One click. RRC has it before your morning coffee.</h4>
-        <p>If they return it, Caprock routes the correction back to you with the exact section flagged. No more chasing district-office voicemails.</p>
+        <div class="when">8:00 AM tomorrow</div>
+        <h4>You print, sign, and walk it to the District Office.</h4>
+        <p>W-3 is paper-only at the RRC today (W-3A and W-3X are online; W-3 itself isn't). Caprock hands you a print-ready PDF — every cement volume already cross-checked, Section IX already drafted — that your district expects in duplicate. Sign, print twice, walk it in.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="paper">
+  <div class="wrap">
+    <span class="eyebrow">A word about online filing</span>
+    <h2>W-3 is the form RRC hasn't put online yet.</h2>
+    <p class="lead">RRC has been moving forms online for years. P-5 renewals, W-3A notices of intent, W-3C surface-equipment certifications, W-3X plugging extensions — all electronic. The post-plugging W-3 itself is the laggard: still paper, still in duplicate, still walked or mailed to the District Office within 30 days.</p>
+    <p class="lead" style="margin-top: 18px;">That gap is what Caprock is built for. We give you a print-ready W-3 PDF — the cement math already cross-checked, Section IX already drafted, every field already pulled from your RRC records. The day RRC adds W-3 to LoneSTAR, Caprock submits electronically and the rest of the workflow doesn't change.</p>
   </div>
 </section>
 
@@ -217,13 +376,13 @@
     <h2>The same calculation a Texas RRC inspector would run by hand.</h2>
     <p class="lead">A W-3 is a regulated engineering document. A wrong cement volume isn't a typo — it's a violation. So we don't ask an AI to do the math.</p>
     <div class="callout">
-      <strong>The cement-volume calculations and TAC §3.14 plug placement on every Caprock W-3 come from a deterministic rule engine — plain Python that you, your auditor, or a district inspector can read line by line.</strong> The AI parses your voice memo and surfaces what's missing; it never fills in a number it didn't hear from you. If a cement volume looks wrong, you can pull up the exact formula, the exact inputs, and the exact §3.14 paragraph that authorized the plug. <a href="for-engineers.html">See the technical architecture →</a>
+      <strong>Every cement volume on every Caprock W-3 comes from the exact same calculation, every time — the same one a §3.14 inspector would run by hand.</strong> The math is explicit and auditable. Your auditor, your district office, or you can pull up the exact formula, the exact inputs, and the exact §3.14 paragraph that authorized the plug. The AI parses your voice memo and surfaces what's missing; it never fills in a number it didn't hear from you. <a href="/for-engineers">See the technical architecture →</a>
     </div>
-    <div class="trust" style="margin-top: 56px;">
-      <div class="stat"><div class="num">TAC §3.14</div><div class="label">FULLY ENCODED — GENERAL + SPECIAL CASE</div></div>
-      <div class="stat"><div class="num">0</div><div class="label">HALLUCINATED CEMENT VOLUMES</div></div>
-      <div class="stat"><div class="num">Texas-wide</div><div class="label">EVERY RRC DISTRICT</div></div>
-      <div class="stat"><div class="num">$1 refund</div><div class="label">ANY TIME BEFORE LAUNCH</div></div>
+    <div class="trust">
+      <div class="stat"><div class="num">TAC §3.14</div><div class="label">Fully encoded — general + special case</div></div>
+      <div class="stat"><div class="num">0</div><div class="label">Made-up cement volumes</div></div>
+      <div class="stat"><div class="num">Texas-wide</div><div class="label">Every RRC district</div></div>
+      <div class="stat"><div class="num">$1 refund</div><div class="label">Any time before launch</div></div>
     </div>
   </div>
 </section>
@@ -236,8 +395,8 @@
     <div class="pricing">
       <div class="tier">
         <h3>Compliance Core</h3>
+        <p class="sub">Per operator. Unlimited wells.</p>
         <div class="price">$299<small>&nbsp;/mo</small></div>
-        <p style="color: #6B7280; font-size: 14px; margin: 0;">Per operator. Unlimited wells.</p>
         <ul>
           <li>Generates a complete W-3 in under 10 minutes per well</li>
           <li>Voice memo to Section IX narrative — dictate from the truck</li>
@@ -248,15 +407,15 @@
         <a href="#reserve" class="btn btn-primary">Reserve at $1</a>
       </div>
       <div class="tier featured">
-        <span class="tag">SUITE</span>
+        <span class="tag">Suite</span>
         <h3>Compliance Suite</h3>
+        <p class="sub">Everything in Core, plus inspector review and audit trail.</p>
         <div class="price">$499<small>&nbsp;/mo</small></div>
-        <p style="color: #6B7280; font-size: 14px; margin: 0;">Everything in Core, plus W-15 + RRC submission.</p>
         <ul>
           <li>Everything in Compliance Core</li>
-          <li>W-15 cementing &amp; casing report auto-generated alongside the W-3</li>
-          <li>One-click submit to RRC with full audit trail per filing</li>
-          <li>Returned filings? We route the correction back with the exact section flagged</li>
+          <li>Each filing reviewed by a former RRC District inspector before you sign</li>
+          <li>Per-filing audit trail appended to the back of every PDF — every input, every formula, every rule paragraph</li>
+          <li>If your district returns a filing, we walk you through the correction with the exact section flagged</li>
           <li>Priority phone support, same-day response</li>
         </ul>
         <a href="#reserve" class="btn btn-primary">Reserve at $1</a>
@@ -267,40 +426,54 @@
 
 <section class="dark" id="reserve">
   <div class="wrap" style="text-align: center;">
-    <span class="eyebrow" style="color: #FCD34D;">Reserve early access</span>
-    <h2 style="color: #F9FAFB;">$1 fully refundable. Locks your launch-tier price.</h2>
-    <p class="lead" style="margin: 0 auto 32px;">
+    <span class="eyebrow">Reserve early access</span>
+    <h2 style="color: #F4F1EA;">$1 fully refundable.<br>Locks your launch-tier price.</h2>
+    <p class="lead" style="margin: 0 auto 36px;">
       Your deposit signals real intent — the only customer-discovery data point that doesn't lie. Refund any time before launch with one click.
     </p>
     <a href="https://buy.stripe.com/REPLACE_WITH_YOUR_PAYMENT_LINK"
-       class="btn btn-primary" style="font-size: 18px; padding: 16px 32px;">
+       class="btn btn-primary" style="font-size: 18px; padding: 18px 36px;">
       Reserve at $1 →
     </a>
-    <p style="color: #9CA3AF; font-size: 13px; margin-top: 24px;">
-      Texas operators only at launch. Other states Q4 2026.
-      <br>Questions? <a href="mailto:hello@trycaprock.com" style="color: #FCD34D;">hello@trycaprock.com</a>
+
+    <div style="max-width: 560px; margin: 36px auto 0; padding: 22px 28px; border: 1px solid #2A323D; border-radius: 8px; text-align: left; background: rgba(255,255,255,0.03);">
+      <div style="font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.18em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px;">How to get your money back</div>
+      <p style="margin: 0 0 14px; color: #C7BDA8; font-size: 15px; line-height: 1.55;">
+        Refunds within 24 hours. No forms, no questions.
+      </p>
+      <a href="mailto:refund@trycaprock.com?subject=Refund%20my%20Caprock%20deposit&amp;body=Please%20refund%20my%20%241%20Caprock%20early-access%20deposit.%20%0AThe%20email%20on%20my%20Stripe%20receipt%20is%3A%20" class="btn btn-ghost" style="font-size: 14px; padding: 10px 20px;">Email refund@trycaprock.com →</a>
+    </div>
+
+    <p style="color: #9CA3AF; font-size: 13.5px; margin-top: 28px; font-family: var(--mono); letter-spacing: 0.04em;">
+      Texas operators only at launch. Other states Q4 2026.<br>
+      Questions? <a href="mailto:hello@trycaprock.com" style="color: var(--gold);">hello@trycaprock.com</a>
     </p>
   </div>
 </section>
 
 <footer>
   <div class="wrap row">
-    <div class="brand" style="font-size: 16px;">
-      <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 24px; height: 24px;">
-        <g transform="translate(75, 75)">
-          <circle cx="0" cy="0" r="60" fill="#F9FAFB"/>
-          <rect x="-10" y="-50" width="20" height="100" fill="#1F2937"/>
-          <rect x="-10" y="-36" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="-5" width="20" height="10" fill="#D97706"/>
-          <rect x="-10" y="26" width="20" height="10" fill="#D97706"/>
-        </g>
-      </svg>
-      Caprock
+    <div class="brand">
+      <span style="display: inline-flex; align-items: center; gap: 9px;">
+        <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 26px; height: 26px;">
+          <g transform="translate(75, 75)">
+            <circle cx="0" cy="0" r="60" fill="#F4F1EA"/>
+            <rect x="-11" y="-50" width="22" height="100" fill="#1F2937"/>
+            <rect x="-12" y="-50" width="2" height="100" fill="#9CA3AF"/>
+            <rect x="10" y="-50" width="2" height="100" fill="#9CA3AF"/>
+            <rect x="-11" y="-36" width="22" height="11" fill="#D97706"/>
+            <rect x="-11" y="-5.5" width="22" height="11" fill="#D97706"/>
+            <rect x="-11" y="25" width="22" height="11" fill="#D97706"/>
+          </g>
+        </svg>
+        Caprock
+      </span>
     </div>
     <div>
-      © 2026 Caprock. Texas RRC W-3 compliance, automated. ·
-      <a href="mailto:hello@trycaprock.com">hello@trycaprock.com</a> ·
-      <a href="for-engineers.html">For engineers</a>
+      © 2026 Caprock. Texas RRC W-3 compliance, automated.&nbsp;·&nbsp;
+      <a href="mailto:hello@trycaprock.com">hello@trycaprock.com</a>&nbsp;·&nbsp;
+      <a href="mailto:refund@trycaprock.com?subject=Refund%20my%20Caprock%20deposit">Refund my deposit</a>&nbsp;·&nbsp;
+      <a href="/for-engineers">For engineers</a>
     </div>
   </div>
 </footer>
