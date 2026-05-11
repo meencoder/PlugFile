@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://wellplug.example/schemas/w3.schema.json",
+  "$id": "https://plugfile.example/schemas/w3.schema.json",
   "title": "Texas RRC Form W-3 (Plugging Record)",
-  "description": "Schema for the Texas Railroad Commission Form W-3 (Plugging Record), with field-level source-of-truth annotations under x-source. Field-level RRC form sections are tagged via x-rrc-section. Fields whose source is `computed` are derived by the deterministic engine in wellplug.tac_3_14 and must never be operator-edited.",
+  "description": "Schema for the Texas Railroad Commission Form W-3 (Plugging Record), with field-level source-of-truth annotations under x-source. Field-level RRC form sections are tagged via x-rrc-section. Fields whose source is `computed` are derived by the deterministic engine in plugfile.tac_3_14 and must never be operator-edited.",
   "type": "object",
   "properties": {
     "api_number": {

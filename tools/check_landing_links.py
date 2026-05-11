@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-r"""Verify every link on the Kaproq landing site.
+r"""Verify every link on the Plugfile landing site.
 
 Two modes:
 
@@ -8,7 +8,7 @@ Two modes:
                                  anchor links (#section) resolve to existing
                                  IDs, and external links return 2xx-3xx.
 
-  --live https://kaproq.com  Fetch the live site, follow internal links,
+  --live https://plugfile.com  Fetch the live site, follow internal links,
                                  verify same as above plus that every page
                                  actually returns 200.
 
@@ -18,8 +18,8 @@ Stdlib only.
 
 Usage:
   python tools\check_landing_links.py --local
-  python tools\check_landing_links.py --live https://kaproq.com
-  python tools\check_landing_links.py --live https://kaproq.com --skip-external
+  python tools\check_landing_links.py --live https://plugfile.com
+  python tools\check_landing_links.py --live https://plugfile.com --skip-external
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ def http_check(url: str, *, timeout: int = 12) -> tuple[bool, str]:
         try:
             req = urllib.request.Request(
                 url, method=method,
-                headers={"User-Agent": "kaproq-linkcheck/1.0",
+                headers={"User-Agent": "plugfile-linkcheck/1.0",
                          "Accept": "*/*"},
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -252,7 +252,7 @@ def check_live(start_url: str, *, skip_external: bool) -> tuple[int, int]:
             continue
         try:
             req = urllib.request.Request(
-                url, headers={"User-Agent": "kaproq-linkcheck/1.0"})
+                url, headers={"User-Agent": "plugfile-linkcheck/1.0"})
             # Limit redirect-follow depth (default urllib follows up to 10).
             # 308 -> rewrite -> 308 chains would otherwise hang the crawler.
             opener = urllib.request.build_opener(_LimitedRedirect(max_redirects=3))
@@ -323,7 +323,7 @@ def main() -> int:
     g.add_argument("--local", action="store_true",
                    help="Check files in --landing-dir (default: ./landing).")
     g.add_argument("--live",
-                   help="URL of the live site, e.g. https://kaproq.com")
+                   help="URL of the live site, e.g. https://plugfile.com")
     p.add_argument("--landing-dir", default="landing")
     p.add_argument("--skip-external", action="store_true",
                    help="Don't fetch external URLs (offline check).")

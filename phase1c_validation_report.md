@@ -1,7 +1,7 @@
 # Phase 1C Validation Report
 
 Output of `scripts/validate_phase1c.py`. Demonstrates the surface-
-restoration narrative drafter (`wellplug.narrative`) against 8 
+restoration narrative drafter (`plugfile.narrative`) against 8 
 golden voice transcripts representing real-style operator dictation.
 
 Each transcript is exercised through:

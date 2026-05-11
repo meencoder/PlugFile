@@ -14,7 +14,7 @@ rules require a human for everything below.
 
 | Field | Value | Notes |
 |---|---|---|
-| Email | `quadri.ks@gmail.com` (or your real personal email) | Use a personal email *not* `hello@kaproq.com` for now — Stripe sends critical security alerts here. You can swap to `admin@kaproq.com` later via Cloudflare Email Routing. |
+| Email | `quadri.ks@gmail.com` (or your real personal email) | Use a personal email *not* `hello@plugfile.com` for now — Stripe sends critical security alerts here. You can swap to `admin@plugfile.com` later via Cloudflare Email Routing. |
 | Full name | Your full legal name as on your driver's license | Must match your tax records. |
 | Country | United States | Determines Stripe legal entity. |
 | Password | Strong, unique | Use a password manager. |
@@ -60,13 +60,13 @@ previous one.
 | Business type | **Individual / Sole proprietor** | Pre-LLC. Switch to LLC later via "Update entity type." |
 | Industry | **Software / SaaS** → Sub-category: "Computer software / consulting" | Sets your MCC (merchant category code) to standard SaaS. **Do not** pick "Oil and gas" — that's the MCC for fuel sellers and triggers extra underwriting. |
 | Product description | *(paste exactly the paragraph below)* | This is read by Stripe's underwriting team. Specific + factual = faster approval. |
-| Business website | `https://kaproq.com` | If your live site isn't up, paste the GitHub repo URL `https://github.com/quadri-ks/WellPlug`. |
+| Business website | `https://plugfile.com` | If your live site isn't up, paste the GitHub repo URL `https://github.com/meencoder/PlugFile`. |
 | Average transaction amount | `$1` initially, $299 once subscriptions launch | Stripe uses this for fraud-rule defaults. Underestimating triggers reviews; overestimating raises your reserve. |
 | Average monthly volume | $0–$5,000 initially | Honest answer; you can update this anytime. |
 
 **Product description — paste this verbatim:**
 
-> Kaproq is B2B compliance-automation software for Texas oil-and-gas operators. We help them prepare Form W-3 (the Texas Railroad Commission's well-plugging record): cement-volume calculations validated against state regulation TAC §3.14, automatic data fill from public RRC well-master and operator records, and a drafted surface-restoration narrative built from the operator's own voice memo. Today we are charging a $1 refundable deposit that reserves early-access pricing for our launch-tier subscription ($299/month for Compliance Core, $499/month for Compliance Suite). The recurring product launches Q3 2026; deposits are fully refundable until then. Customers are independent oil-and-gas producers, plugging contractors, and compliance managers in Texas.
+> Plugfile is B2B compliance-automation software for Texas oil-and-gas operators. We help them prepare Form W-3 (the Texas Railroad Commission's well-plugging record): cement-volume calculations validated against state regulation TAC §3.14, automatic data fill from public RRC well-master and operator records, and a drafted surface-restoration narrative built from the operator's own voice memo. Today we are charging a $1 refundable deposit that reserves early-access pricing for our launch-tier subscription ($299/month for Compliance Core, $499/month for Compliance Suite). The recurring product launches Q3 2026; deposits are fully refundable until then. Customers are independent oil-and-gas producers, plugging contractors, and compliance managers in Texas.
 
 ### 4b. Personal details (sole prop = Stripe verifies you, not a company)
 
@@ -95,7 +95,7 @@ credentials in a popup). Otherwise: micro-deposit verification, 1–2 business
 days, two small deposits land in your account that you confirm in Stripe.
 
 **Recommendation:** open a separate **Mercury** ($0/mo) or **Relay**
-($0/mo) business checking before linking. Keeps Kaproq revenue separate
+($0/mo) business checking before linking. Keeps Plugfile revenue separate
 from personal cash, makes future LLC migration cleaner. If that's too much
 friction now, your personal checking is fine.
 
@@ -107,11 +107,11 @@ friction now, your personal checking is fine.
 
 | Field | Value |
 |---|---|
-| Public business name | `Kaproq` |
-| Doing-business-as (DBA) | `Kaproq` |
+| Public business name | `Plugfile` |
+| Doing-business-as (DBA) | `Plugfile` |
 | Statement descriptor | `KAPROQ COMPLIANCE` (18 chars; max 22) |
 | Shortened descriptor | `KAPROQ*` |
-| Customer support email | `hello@kaproq.com` |
+| Customer support email | `hello@plugfile.com` |
 | Customer support phone | optional; leave blank or use Google Voice |
 | Customer support address | your home address (required field) |
 
@@ -119,8 +119,8 @@ friction now, your personal checking is fine.
 
 | Field | Value |
 |---|---|
-| Logo | Upload `branding/caprock_logo.svg` |
-| Icon | Upload `branding/caprock_mark.svg` |
+| Logo | Upload `branding/plugfile_logo.svg` |
+| Icon | Upload `branding/plugfile_mark.svg` |
 | Brand color | `#D97706` (amber accent) |
 | Accent color | `#1F2937` (charcoal) |
 
@@ -164,8 +164,8 @@ The script handles Product, Price, Payment Link, HTML patching, and deploy.
 
 | Email | What to customize |
 |---|---|
-| Successful payment receipt | Reply-to: `hello@kaproq.com`. Add a one-line "What happens next" footer linking back to `https://kaproq.com`. |
-| Refund issued | Reply-to: `refund@kaproq.com`. Add: "Thanks for trying Kaproq. If there's anything we should improve, hit reply." |
+| Successful payment receipt | Reply-to: `hello@plugfile.com`. Add a one-line "What happens next" footer linking back to `https://plugfile.com`. |
+| Refund issued | Reply-to: `refund@plugfile.com`. Add: "Thanks for trying Plugfile. If there's anything we should improve, hit reply." |
 | Failed payment | Default is fine for now. |
 
 Stripe sends these automatically on every transaction. Customizing builds
@@ -214,6 +214,6 @@ Once test mode works end-to-end:
 ## Files referenced in this guide
 
 - `tools/stripe_setup.py` — automation script for Product / Price / Payment Link / HTML patching
-- `branding/caprock_logo.svg` — full lockup with wordmark, for Stripe Branding → Logo
-- `branding/caprock_mark.svg` — square mark only, for Stripe Branding → Icon
+- `branding/plugfile_logo.svg` — full lockup with wordmark, for Stripe Branding → Logo
+- `branding/plugfile_mark.svg` — square mark only, for Stripe Branding → Icon
 - `landing/index.html`, `landing/for-engineers.html` — auto-patched by the script with the real Payment Link URL

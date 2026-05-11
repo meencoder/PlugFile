@@ -2,12 +2,12 @@
 r"""Automate Stripe Payment Link setup and wire it into the landing pages.
 
 What this script does (after you've created your Stripe account manually):
-  1. Create or reuse the "Kaproq — Founders early access" Product.
+  1. Create or reuse the "Plugfile — Founders early access" Product.
   2. Create or reuse the $1 USD one-time Price.
   3. Create or reuse the Payment Link with the right config:
        - customer email collected at checkout
        - confirmation message tells operator what comes next
-       - Caprock-specific metadata so we can find/regenerate it later
+       - Plugfile-specific metadata so we can find/regenerate it later
   4. Patch landing/index.html and landing/for-engineers.html to replace
      `REPLACE_WITH_YOUR_PAYMENT_LINK` with the real Payment Link URL.
   5. Optionally invoke tools/deploy_landing.py to push changes live.
@@ -21,7 +21,7 @@ What this script can NOT do (human required, one-time):
   - Activating live-mode payments
 
 ONE-TIME PREREQUISITES (you do these in your browser):
-  1. Sign up at https://dashboard.stripe.com/register. Use your Caprock
+  1. Sign up at https://dashboard.stripe.com/register. Use your Plugfile
      business name; pick "Sole proprietorship" if you haven't formed an LLC.
   2. Complete the business profile (address, industry, bank account).
      For testing-only, you can skip bank account — test mode works.
@@ -59,23 +59,23 @@ import urllib.request
 
 API = "https://api.stripe.com/v1"
 
-# Caprock-specific identifiers used for idempotent lookup
-PRODUCT_NAME = "Kaproq — Founders early access"
-PRODUCT_LOOKUP_KEY = "kaproq_founders_deposit_product"
-PRICE_LOOKUP_KEY = "kaproq_founders_deposit_price"
-PAYMENT_LINK_TAG = "kaproq_founders_deposit_link"
+# Plugfile-specific identifiers used for idempotent lookup
+PRODUCT_NAME = "Plugfile — Founders early access"
+PRODUCT_LOOKUP_KEY = "plugfile_founders_deposit_product"
+PRICE_LOOKUP_KEY = "plugfile_founders_deposit_price"
+PAYMENT_LINK_TAG = "plugfile_founders_deposit_link"
 
 CONFIRMATION_MESSAGE = (
-    "Reserved. We'll email you when Caprock opens to your district. "
+    "Reserved. We'll email you when Plugfile opens to your district. "
     "Charged to your card as **KAPROQ COMPLIANCE**. "
-    "Refundable any time before launch — email refund@kaproq.com."
+    "Refundable any time before launch — email refund@plugfile.com."
 )
 
 PRODUCT_DESCRIPTION = (
-    "$1 refundable deposit reserves early-access pricing for Caprock, "
+    "$1 refundable deposit reserves early-access pricing for Plugfile, "
     "Texas RRC Form W-3 plugging-record automation. Deposit is fully "
     "refundable any time before launch (estimated Q3 2026). "
-    "See https://kaproq.com."
+    "See https://plugfile.com."
 )
 
 
@@ -143,7 +143,7 @@ def get_account(key: str) -> dict:
 
 
 def find_product(key: str) -> dict | None:
-    res = stripe("GET", f"/products/search?query=metadata[%27caprock_id%27]:%27{PRODUCT_LOOKUP_KEY}%27&limit=1", key)
+    res = stripe("GET", f"/products/search?query=metadata[%27plugfile_id%27]:%27{PRODUCT_LOOKUP_KEY}%27&limit=1", key)
     items = res.get("data", [])
     return items[0] if items else None
 
@@ -154,7 +154,7 @@ def create_product(key: str, *, dry_run: bool) -> dict:
     return stripe("POST", "/products", key, data={
         "name": PRODUCT_NAME,
         "description": PRODUCT_DESCRIPTION,
-        "metadata": {"caprock_id": PRODUCT_LOOKUP_KEY},
+        "metadata": {"plugfile_id": PRODUCT_LOOKUP_KEY},
     })
 
 
@@ -176,7 +176,7 @@ def create_price(key: str, product_id: str, *, dry_run: bool) -> dict:
         "currency": "usd",
         "unit_amount": 100,           # $1.00 in cents
         "lookup_key": PRICE_LOOKUP_KEY,
-        "metadata": {"caprock_id": PRICE_LOOKUP_KEY},
+        "metadata": {"plugfile_id": PRICE_LOOKUP_KEY},
     })
 
 
@@ -184,7 +184,7 @@ def find_payment_link(key: str) -> dict | None:
     # Payment Links don't support search; list active and filter by metadata.
     res = stripe("GET", "/payment_links?active=true&limit=100", key)
     for pl in res.get("data", []):
-        if pl.get("metadata", {}).get("caprock_id") == PAYMENT_LINK_TAG:
+        if pl.get("metadata", {}).get("plugfile_id") == PAYMENT_LINK_TAG:
             return pl
     return None
 
@@ -206,7 +206,7 @@ def create_payment_link(key: str, price_id: str, *, dry_run: bool) -> dict:
         },
         "allow_promotion_codes": False,
         "submit_type": "book",  # button reads "Reserve" instead of "Pay"
-        "metadata": {"caprock_id": PAYMENT_LINK_TAG},
+        "metadata": {"plugfile_id": PAYMENT_LINK_TAG},
     })
 
 
@@ -286,7 +286,7 @@ def main() -> int:
         if existing:
             print(f"Payment Link URL: {existing['url']}")
             return 0
-        print("No Caprock Payment Link found in this account.")
+        print("No Plugfile Payment Link found in this account.")
         return 1
 
     # 1. Product
@@ -350,7 +350,7 @@ def main() -> int:
 
     print("\n" + "=" * 70)
     print(f"DONE. Reserve buttons now point to: {real_url}")
-    print("Test it: open https://kaproq.com, click Reserve, confirm checkout.")
+    print("Test it: open https://plugfile.com, click Reserve, confirm checkout.")
     if mode == "TEST":
         print("\nTEST MODE: use card 4242 4242 4242 4242 with any future expiry + CVC.")
     return 0

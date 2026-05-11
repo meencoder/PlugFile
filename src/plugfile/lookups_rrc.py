@@ -3,8 +3,8 @@
 Implements the Fetcher protocol against RRC's public web endpoints. Drop-in
 replacement for `MockFetcher`. Production path:
 
-    from wellplug.lookups_rrc import RRCRoRQFetcher
-    from wellplug.prefill import prefill_w3
+    from plugfile.lookups_rrc import RRCRoRQFetcher
+    from plugfile.prefill import prefill_w3
     fetcher = RRCRoRQFetcher()
     form, conflicts = prefill_w3("42-371-30001", fetcher)
 
@@ -18,7 +18,7 @@ Architecture:
 
 HTML selectors are calibrated against RRC's public site as best understood.
 RRC occasionally redesigns; the CLI debugger
-(`python -m wellplug.lookups_rrc 42-371-30001`) dumps raw HTML to disk and
+(`python -m plugfile.lookups_rrc 42-371-30001`) dumps raw HTML to disk and
 prints the parsed result, turning selector recalibration into a 30-second loop.
 
 For test environments without internet egress, see `tests/test_lookups_rrc.py`
@@ -62,10 +62,10 @@ from .lookups import (
 
 # ---- configuration ---------------------------------------------------------
 
-USER_AGENT = "WellPlug-RRC-Fetcher/0.2 (+https://kaproq.com)"
+USER_AGENT = "Plugfile-RRC-Fetcher/0.2 (+https://plugfile.com)"
 DEFAULT_RATE_LIMIT_S = 1.0
 DEFAULT_CACHE_TTL = 86400  # 24 hours
-DEFAULT_CACHE_DIR = Path.home() / ".cache" / "wellplug-rrc"
+DEFAULT_CACHE_DIR = Path.home() / ".cache" / "plugfile-rrc"
 
 # RRC public-data endpoints. RRC moves these around occasionally; verify
 # current URLs with the CLI debugger if a fetch returns unexpected HTML.
@@ -221,8 +221,8 @@ class RRCRoRQFetcher:
 
     Implements the same interface as `MockFetcher`. Use as a drop-in:
 
-        from wellplug.lookups_rrc import RRCRoRQFetcher
-        from wellplug.prefill import prefill_w3
+        from plugfile.lookups_rrc import RRCRoRQFetcher
+        from plugfile.prefill import prefill_w3
         form, conflicts = prefill_w3("42-371-30001", RRCRoRQFetcher())
     """
 
@@ -293,7 +293,7 @@ class RRCRoRQFetcher:
                     "RRC returned HTTP 500 for " + full_url + "\n"
                     "\nThis usually means the URL or parameters don't "
                     "match RRC's current schema. Run:\n"
-                    "  python -m wellplug.lookups_rrc --inspect "
+                    "  python -m plugfile.lookups_rrc --inspect "
                     "'<paste real URL from browser DevTools>'\n"
                     "to see what response RRC returns for a URL you know "
                     "works. Then update the RRC_*_SEARCH constants and "
@@ -321,7 +321,7 @@ class RRCRoRQFetcher:
                     raise FetcherError(
                         f"{context}: required field '{name}' not found "
                         f"(xpath {spec.xpath!r}). RRC may have changed the "
-                        f"page layout — run `python -m wellplug.lookups_rrc "
+                        f"page layout — run `python -m plugfile.lookups_rrc "
                         f"<api>` to inspect."
                     )
                 out[name] = spec.default
@@ -538,7 +538,7 @@ def _looks_like_well_detail(tree: Any) -> bool:
 
 def _format_api(api_compact: str) -> str:
     """Compact API → 'XX-XXX-XXXXX'. Accepts 10 or 14 digit forms; the
-    canonical Kaproq display format is 10 digits (42-XXX-XXXXX) regardless
+    canonical Plugfile display format is 10 digits (42-XXX-XXXXX) regardless
     of whether RRC returns 10 or 14."""
     digits = api_compact.replace("-", "").strip()
     if len(digits) in (10, 14):
@@ -550,7 +550,7 @@ def _format_api(api_compact: str) -> str:
 
 def _cli_main() -> int:
     p = argparse.ArgumentParser(
-        prog="wellplug-rrc",
+        prog="plugfile-rrc",
         description="RRC RoRQ fetcher debugger. Hits the live RRC site, "
                     "dumps raw HTML to disk, prints the parsed result. Use "
                     "this to calibrate selectors when RRC updates their HTML.",

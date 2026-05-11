@@ -1,8 +1,8 @@
 # Phase 1A Validation Report
 
 Output of `scripts/validate_phase1a.py`. Every cement volume below 
-comes from `wellplug.cement_volume` (deterministic, unit-tested) 
-and every plug placement from `wellplug.tac_3_14.compute_plug_program`.
+comes from `plugfile.cement_volume` (deterministic, unit-tested) 
+and every plug placement from `plugfile.tac_3_14.compute_plug_program`.
 
 Five representative Texas wellbore geometries were exercised; one 
 triggers the `general` rule path, one triggers the BUQW-uncovered 

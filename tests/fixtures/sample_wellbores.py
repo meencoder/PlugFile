@@ -19,7 +19,7 @@ practice. They are not drawn from any specific filed W-3.
 
 from __future__ import annotations
 
-from wellplug.geometry import (
+from plugfile.geometry import (
     BUQW,
     CasingKind,
     CasingString,

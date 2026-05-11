@@ -24,7 +24,7 @@ Usage:
   export CLOUDFLARE_API_TOKEN=...
   python tools/cloudflare_secure_baseline.py --dry-run         # preview
   python tools/cloudflare_secure_baseline.py --apply           # apply to all zones
-  python tools/cloudflare_secure_baseline.py --apply --zone kaproq.com
+  python tools/cloudflare_secure_baseline.py --apply --zone plugfile.com
   python tools/cloudflare_secure_baseline.py --apply --skip-dns
   python tools/cloudflare_secure_baseline.py --apply --report-email you@example.com
 
@@ -252,7 +252,7 @@ def apply_baseline_to_zone(
                     create_dns_record(zone_id, {
                         "type": "TXT", "name": "@",
                         "content": '"v=spf1 -all"',
-                        "comment": "Kaproq baseline: no senders authorized",
+                        "comment": "Plugfile baseline: no senders authorized",
                     }, token)
                     changes.append('spf: added TXT @ "v=spf1 -all"')
                 except CFError as e:
@@ -275,7 +275,7 @@ def apply_baseline_to_zone(
                     create_dns_record(zone_id, {
                         "type": "TXT", "name": "_dmarc",
                         "content": f'"{dmarc_value}"',
-                        "comment": "Kaproq baseline: reject spoofed mail",
+                        "comment": "Plugfile baseline: reject spoofed mail",
                     }, token)
                     changes.append("dmarc: added TXT _dmarc p=reject")
                 except CFError as e:

@@ -7,8 +7,8 @@ import re
 
 import pytest
 
-from wellplug.json_schema_export import export_w3_json_schema
-from wellplug.w3_schema import (
+from plugfile.json_schema_export import export_w3_json_schema
+from plugfile.w3_schema import (
     FieldSource,
     W3_SCHEMA,
     W3Form,

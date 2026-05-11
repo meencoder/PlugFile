@@ -1,0 +1,42 @@
+[
+  {
+    "operator": "Endeavor Energy Resources",
+    "notes": "Midland-based independent. Look up: production engineers, regulatory leads. Public RRC operator."
+  },
+  {
+    "operator": "Mewbourne Oil Company",
+    "notes": "Tyler-based; large acreage in Permian + Anadarko. Look up: completions, regulatory."
+  },
+  {
+    "operator": "Crownquest Operating",
+    "notes": "Midland independent; mid-size Permian. Look up: production foreman, controller."
+  },
+  {
+    "operator": "BTA Oil Producers",
+    "notes": "Midland-based; smaller independent. Look up: ops manager, field super."
+  },
+  {
+    "operator": "Texland Petroleum",
+    "notes": "Fort Worth-based; legacy Permian operator. Look up: VP ops, regulatory."
+  },
+  {
+    "operator": "Cox Operating",
+    "notes": "Multiple basins incl. Texas. Look up: field super, P&A coordinator."
+  },
+  {
+    "operator": "Riley Exploration Permian",
+    "notes": "NM/TX overlap operator. Look up: completions engineer, regulatory."
+  },
+  {
+    "operator": "Ring Energy",
+    "notes": "Central Basin Platform operator. Look up: production manager, controller."
+  },
+  {
+    "operator": "Vital Energy",
+    "notes": "Midland-based independent (formerly Laredo Petroleum). Look up: regulatory, ops."
+  },
+  {
+    "operator": "Matador Resources",
+    "notes": "Dallas-based; Delaware Basin focused. Look up: regulatory, completions."
+  }
+]

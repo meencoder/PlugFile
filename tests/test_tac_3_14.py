@@ -11,7 +11,7 @@ import math
 
 import pytest
 
-from wellplug.tac_3_14 import (
+from plugfile.tac_3_14 import (
     GENERAL_PLUG_ABOVE_FT,
     GENERAL_PLUG_BELOW_FT,
     SURFACE_PLUG_LENGTH_FT,

@@ -12,7 +12,7 @@ each property with x-* extension keywords carrying the source-of-truth
 metadata (`x-source`, `x-rrc-section`, `x-canonical`, `x-unit`).
 
 Run:
-    PYTHONPATH=src python -m wellplug.json_schema_export > schemas/w3.schema.json
+    PYTHONPATH=src python -m plugfile.json_schema_export > schemas/w3.schema.json
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from .w3_schema import W3_SCHEMA
 
 
 SCHEMA_URI = "https://json-schema.org/draft/2020-12/schema"
-SCHEMA_ID = "https://wellplug.example/schemas/w3.schema.json"
+SCHEMA_ID = "https://plugfile.example/schemas/w3.schema.json"
 
 
 def export_w3_json_schema() -> dict[str, Any]:
@@ -46,7 +46,7 @@ def export_w3_json_schema() -> dict[str, Any]:
             "Record), with field-level source-of-truth annotations under "
             "x-source. Field-level RRC form sections are tagged via "
             "x-rrc-section. Fields whose source is `computed` are derived "
-            "by the deterministic engine in wellplug.tac_3_14 and must "
+            "by the deterministic engine in plugfile.tac_3_14 and must "
             "never be operator-edited."
         ),
         "type": "object",

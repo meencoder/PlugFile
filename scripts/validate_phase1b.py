@@ -23,10 +23,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from wellplug.json_schema_export import export_w3_json_schema  # noqa: E402
-from wellplug.lookups import MockFetcher  # noqa: E402
-from wellplug.prefill import prefill_w3_with_mock  # noqa: E402
-from wellplug.w3_schema import W3_SCHEMA, FieldSource  # noqa: E402
+from plugfile.json_schema_export import export_w3_json_schema  # noqa: E402
+from plugfile.lookups import MockFetcher  # noqa: E402
+from plugfile.prefill import prefill_w3_with_mock  # noqa: E402
+from plugfile.w3_schema import W3_SCHEMA, FieldSource  # noqa: E402
 
 REPORT_PATH = ROOT / "phase1b_validation_report.md"
 SCHEMA_OUT_PATH = ROOT / "schemas" / "w3.schema.json"
@@ -65,7 +65,7 @@ def main() -> int:
     ]
 
     print("=" * 78)
-    print("WellPlug -- Phase 1B Validation")
+    print("Plugfile -- Phase 1B Validation")
     print("=" * 78)
 
     apis = MockFetcher().known_api_numbers()

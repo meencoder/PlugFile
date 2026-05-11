@@ -24,12 +24,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from wellplug.lookups import MockFetcher  # noqa: E402
-from wellplug.narrative import (  # noqa: E402
+from plugfile.lookups import MockFetcher  # noqa: E402
+from plugfile.narrative import (  # noqa: E402
     extract_facts_from_transcript,
     transcript_to_narrative,
 )
-from wellplug.prefill import prefill_w3_with_mock  # noqa: E402
+from plugfile.prefill import prefill_w3_with_mock  # noqa: E402
 from tests.fixtures.voice_transcripts import ALL_TRANSCRIPTS  # noqa: E402
 
 
@@ -41,7 +41,7 @@ def main() -> int:
         "# Phase 1C Validation Report",
         "",
         "Output of `scripts/validate_phase1c.py`. Demonstrates the surface-",
-        "restoration narrative drafter (`wellplug.narrative`) against 8 ",
+        "restoration narrative drafter (`plugfile.narrative`) against 8 ",
         "golden voice transcripts representing real-style operator dictation.",
         "",
         "Each transcript is exercised through:",
@@ -57,7 +57,7 @@ def main() -> int:
     ]
 
     print("=" * 78)
-    print("WellPlug -- Phase 1C Validation")
+    print("Plugfile -- Phase 1C Validation")
     print("=" * 78)
 
     summary_rows = []

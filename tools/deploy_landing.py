@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-r"""Deploy landing/ to Cloudflare Pages and attach kaproq.com.
+r"""Deploy landing/ to Cloudflare Pages and attach plugfile.com.
 
 Automates Steps 2-4 of the deployment walkthrough:
   Step 2 - Create the Pages project (if missing) and upload landing/ contents.
-  Step 3 - Attach apex domain (kaproq.com) and www subdomain to the project.
+  Step 3 - Attach apex domain (plugfile.com) and www subdomain to the project.
   Step 4 - Poll until SSL provisioned, then run HTTPS + security-header checks.
 
 Prerequisites:
@@ -21,7 +21,7 @@ Usage:
   $env:CLOUDFLARE_API_TOKEN = "..."           # PowerShell
   python tools\deploy_landing.py              # full deploy with defaults
   python tools\deploy_landing.py --skip-verify
-  python tools\deploy_landing.py --project-name caprock --domain kaproq.com
+  python tools\deploy_landing.py --project-name plugfile --domain plugfile.com
   python tools\deploy_landing.py --landing-dir landing
 """
 
@@ -179,7 +179,7 @@ def wrangler_deploy(landing_dir: str, project_name: str,
 def verify_https(url: str, expect_status: int = 200) -> tuple[bool, str]:
     try:
         req = urllib.request.Request(url, method="GET",
-                                     headers={"User-Agent": "kaproq-deploy/1.0"})
+                                     headers={"User-Agent": "plugfile-deploy/1.0"})
         with urllib.request.urlopen(req, timeout=15) as resp:
             status = resp.status
             headers = dict(resp.headers)
@@ -215,10 +215,10 @@ def wait_for_ssl(account_id: str, project: str, domain: str,
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--project-name", default="caprock",
-                   help="Cloudflare Pages project name (default: caprock).")
-    p.add_argument("--domain", default="kaproq.com",
-                   help="Apex domain to attach (default: kaproq.com).")
+    p.add_argument("--project-name", default="plugfile",
+                   help="Cloudflare Pages project name (default: plugfile).")
+    p.add_argument("--domain", default="plugfile.com",
+                   help="Apex domain to attach (default: plugfile.com).")
     p.add_argument("--landing-dir", default="landing",
                    help="Local directory to deploy (default: landing).")
     p.add_argument("--account-id", default=os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),

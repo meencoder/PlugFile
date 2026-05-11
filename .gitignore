@@ -9,3 +9,11 @@ build/
 .coverage
 htmlcov/
 .DS_Store
+out/
+*tokens*.txt
+*secrets*.txt
+*credentials*.txt
+.wrangler/
+
+# Excel/LibreOffice lock files
+.~lock.*#

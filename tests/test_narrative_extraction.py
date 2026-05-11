@@ -1,10 +1,10 @@
-"""Tests for the slot extractor in wellplug.narrative."""
+"""Tests for the slot extractor in plugfile.narrative."""
 
 from __future__ import annotations
 
 import pytest
 
-from wellplug.narrative import (
+from plugfile.narrative import (
     ExtractionWarning,
     extract_facts_from_transcript,
 )

@@ -1,4 +1,4 @@
-# Kaproq / WellPlug — Updated Plan (May 2026)
+# Plugfile — Updated Plan (May 2026)
 
 This plan supersedes the original three-weekend Phase 1 plan. The trigger
 is a regulatory finding from May 2026: **W-3 (Plugging Record) is still
@@ -15,7 +15,7 @@ RRC already has on them. RRC has digitized the *inactive-well lifecycle*
 (P-5, W-3C, W-3X) but has not onboarded the *post-plugging record*
 itself, leaving W-3 as the laggard form.
 
-Kaproq's near-term wedge is therefore not "submit to RRC" — it is
+Plugfile's near-term wedge is therefore not "submit to RRC" — it is
 **produce a print-ready W-3 PDF, with §3.14-validated cement math and a
 drafted Section IX narrative, that the operator signs and walks to the
 District Office**. When (not if) RRC eventually onboards W-3 to LoneSTAR
@@ -42,7 +42,7 @@ retainer trial (~$1–2K). Total residual validation spend: $2.5–3.4K.
 
 The retainer becomes a product feature, not just a research expense.
 Whoever takes the retainer (former RRC inspector, fractional GC-style
-advisor with O&G compliance background, or similar) reviews Kaproq
+advisor with O&G compliance background, or similar) reviews Plugfile
 outputs against current District Office practice and gets named on the
 landing page as the regulatory cover. That naming is the difference
 between "another oil & gas app" and "the only W-3 tool with named
@@ -53,10 +53,10 @@ regulatory review" — and is impossible to manufacture after the fact.
 **Phase 1 (Complete, May 4, 2026).** Cement-volume math + TAC §3.14
 rule engine + W-3 schema with source-of-truth metadata + voice-to-
 narrative drafter + 208 passing tests. Public on
-github.com/quadri-ks/WellPlug for Phase 1A; 1B/1C staged locally.
+github.com/meencoder/PlugFile for Phase 1A; 1B/1C staged locally.
 
 **Phase 2A (Complete, May 5–7, 2026).** Real RRC RoRQ fetcher
-(`src/wellplug/lookups_rrc.py`) with retry / throttle / disk-cache,
+(`src/plugfile/lookups_rrc.py`) with retry / throttle / disk-cache,
 synthetic HTML fixtures, env-var-driven fetcher selection, and a CLI
 debugger for selector calibration. Pyproject bumped to 0.2.0 with
 runtime deps requests/lxml/diskcache.
@@ -71,7 +71,7 @@ appended to the back. Likely libraries: `pdfrw` for the overlay, `fpdf2`
 or `reportlab` for the audit-trail page. One weekend block (4 hours).
 
 **Phase 2C (deferred from earlier slot).** GAU-letter parser. Operators
-upload the GAU letter PDF; Kaproq extracts the BUQW depth and any
+upload the GAU letter PDF; Plugfile extracts the BUQW depth and any
 special-case requirements automatically. Currently the BUQW depth is
 operator-input only.
 
@@ -106,11 +106,11 @@ hypothesis missed. Specifically ask each expert about W-3 paper-filing
 pain — has it ever been raised as a problem in their engagements?
 
 *Step 3: Inspector / fractional-advisor retainer (~$1–2K/mo, 2-month
-trial).* The named human who reviews Kaproq outputs. Sourcing channels
+trial).* The named human who reviews Plugfile outputs. Sourcing channels
 include former RRC District Office staff (LinkedIn search filtered to
 Texas + "RRC" + "former" or "retired"), oil & gas-focused fractional
 GC services, and IPAA / Texas Alliance of Energy Producers contacts.
-Engagement scope: ~5 hours/month — review one or two Kaproq-generated
+Engagement scope: ~5 hours/month — review one or two Plugfile-generated
 W-3s per month against current district practice, flag inaccuracies,
 sign off on the public "reviewed by" callout. After 2 months, decide
 whether to renew or step down to ad-hoc.
@@ -118,7 +118,7 @@ whether to renew or step down to ad-hoc.
 ## Landing-page updates
 
 Both `landing/index.html` and `landing/for-engineers.html` currently
-imply that Kaproq submits W-3 to the RRC online. With the paper-only
+imply that Plugfile submits W-3 to the RRC online. With the paper-only
 finding, that is misleading and needs to be corrected.
 
 The buyer page (`index.html`) gets four changes: the hero lead drops
@@ -140,7 +140,7 @@ and the "District-office liaison" line stays as the substitute. The
 architecture diagram is accurate and unchanged.
 
 Once the inspector retainer is signed, both pages add a one-line trust
-callout: *"Kaproq outputs are reviewed for compliance by [Name],
+callout: *"Plugfile outputs are reviewed for compliance by [Name],
 former RRC District [N] inspector."* That line is held back until the
 retainer is real.
 

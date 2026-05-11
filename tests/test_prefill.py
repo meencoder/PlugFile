@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from wellplug.lookups import MockFetcher
-from wellplug.prefill import (
+from plugfile.lookups import MockFetcher
+from plugfile.prefill import (
     FieldConflict,
     prefill_w3,
     prefill_w3_with_mock,
 )
-from wellplug.w3_schema import FieldSource
+from plugfile.w3_schema import FieldSource
 
 
 _API_BY_FIXTURE = {

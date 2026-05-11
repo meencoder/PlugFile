@@ -4,7 +4,7 @@ Takes a voice transcript (operator dictating what they did at the wellsite
 to restore the surface after plugging) and produces the formal Section IX
 narrative for Form W-3.
 
-Architecture mirrors the rest of WellPlug:
+Architecture mirrors the rest of Plugfile:
   * Pure-Python deterministic slot extractor is the trusted core.
   * Each extracted slot has a confidence score and provenance (which regex
     or keyword matched).

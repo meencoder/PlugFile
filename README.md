@@ -1,4 +1,4 @@
-# WellPlug
+# Plugfile
 
 Deterministic tooling and an LLM prompt scaffold for filing Texas Railroad
 Commission **Form W-3 (Plugging Record)** in compliance with **16 TAC §3.14**
@@ -56,7 +56,7 @@ classifies, and occasionally narrates around the trusted core.
 ## Layout
 
 ```
-src/wellplug/
+src/plugfile/
   geometry.py             # Wellbore / casing / perforation data models    (1A)
   cement_volume.py        # Pure cement-volume math                         (1A)
   tac_3_14.py             # TAC 3.14 rule engine                            (1A)
@@ -97,8 +97,8 @@ schemas/
 From a fresh clone:
 
 ```bash
-git clone https://github.com/quadri-ks/WellPlug.git
-cd WellPlug
+git clone https://github.com/meencoder/PlugFile.git
+cd Plugfile
 
 python -m venv .venv
 # Linux/macOS:  source .venv/bin/activate
@@ -151,7 +151,7 @@ annotations and is consumable by any standard JSON Schema validator.
 ### 4. (Optional) Try the LLM scaffold
 
 The Anthropic-API system prompt and tool-use schemas are in
-`src/wellplug/prompt_scaffold.py`. Phase 1C completes the tool registry:
+`src/plugfile/prompt_scaffold.py`. Phase 1C completes the tool registry:
 
 | Tool | What it does |
 |------|--------------|

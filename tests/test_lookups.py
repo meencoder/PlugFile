@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from wellplug.lookups import (
+from plugfile.lookups import (
     FetcherError,
     MockFetcher,
     RRCRoRQFetcher,

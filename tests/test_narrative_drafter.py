@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from wellplug.narrative import (
+from plugfile.narrative import (
     SurfaceRestorationFacts,
     draft_narrative,
     transcript_to_narrative,

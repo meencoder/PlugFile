@@ -1,6 +1,6 @@
-# Caprock landing page
+# Plugfile landing page
 
-Single-file landing page (`index.html`) for `caprock.ai` — value prop,
+Single-file landing page (`index.html`) for `plugfile.ai` — value prop,
 architecture diagram, pricing tiers, and a Stripe-backed waitlist deposit.
 Designed to deploy in ~30 minutes for under $20.
 
@@ -14,8 +14,8 @@ Link URL you'll paste in below.
 
 ### Step 1 — Buy the domain (~$15/yr)
 
-`caprock.ai` is the recommended target. Fallbacks: `trycaprock.com`,
-`usecaprock.com`, `caprockw3.com`. Buy through:
+`plugfile.ai` is the recommended target. Fallbacks: `plugfile.com`,
+`useplugfile.com`, `plugfilew3.com`. Buy through:
 
 - **Cloudflare Registrar** — sells domains at wholesale, free WHOIS privacy.
 - **Porkbun** — comparable pricing, decent UX.
@@ -25,7 +25,7 @@ Link URL you'll paste in below.
 
 1. Sign up at `dashboard.stripe.com` (free until you take payments).
 2. Products → **+ Add product**:
-   - Name: `Caprock — Founders early access`
+   - Name: `Plugfile — Founders early access`
    - Pricing: **One time**, $1.00 USD
    - Description: "Refundable deposit. Locks launch-tier pricing for 12 months."
 3. Save → click the new product → **Create payment link**.
@@ -33,7 +33,7 @@ Link URL you'll paste in below.
    - **Collect customer email** ✓ (this IS the signal; you need it)
    - **Billing address**: Off
    - After payment: **Show confirmation page** with message
-     "Reserved. We'll email you when Caprock opens to your district."
+     "Reserved. We'll email you when Plugfile opens to your district."
    - **Refund policy** in description: "Fully refundable any time before launch."
 5. Copy the URL (looks like `https://buy.stripe.com/abc123...`).
 6. Open `index.html`, find the placeholder
@@ -45,19 +45,19 @@ Link URL you'll paste in below.
 The fastest path uses your existing GitHub repo:
 
 ```bash
-cd C:\Users\karee\WellPlug\WellPlug
+cd C:\Users\karee\Plugfile\Plugfile
 git add landing/
-git commit -m "Add caprock.ai landing page with Stripe waitlist"
+git commit -m "Add plugfile.ai landing page with Stripe waitlist"
 git push
 ```
 
 Then in your browser:
 
-1. `vercel.com` → **Add new project** → import `quadri-ks/WellPlug`.
+1. `vercel.com` → **Add new project** → import `meencoder/PlugFile`.
 2. **Root directory** → set to `landing/`.
 3. **Framework preset** → Other (no build step).
-4. Deploy. You'll get a `caprock-WellPlug.vercel.app` URL within ~30 sec.
-5. Project → **Settings → Domains** → add `caprock.ai`. Vercel will show
+4. Deploy. You'll get a `plugfile-Plugfile.vercel.app` URL within ~30 sec.
+5. Project → **Settings → Domains** → add `plugfile.ai`. Vercel will show
    the DNS records to add at your registrar (an A record + CNAME). Copy
    them into Cloudflare/Porkbun/Namecheap. SSL provisions automatically
    in 1-5 min.
@@ -122,9 +122,9 @@ Run one test at a time, two weeks each, ~500 visitors per arm minimum.
 
 Update the small print under the Reserve button to:
 
-> Caprock LLC will hold your $1 deposit pending product launch (estimated
+> Plugfile LLC will hold your $1 deposit pending product launch (estimated
 > Q3 2026). You may request a full refund at any time by replying to your
-> deposit confirmation email. If Caprock does not launch by 2026-12-31,
+> deposit confirmation email. If Plugfile does not launch by 2026-12-31,
 > deposits are refunded automatically.
 
 This is a fair, simple commitment. Not legal advice.

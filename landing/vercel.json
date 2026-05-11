@@ -2,8 +2,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/(.*)", "has": [{ "type": "host", "value": "www.trycaprock.com" }],
-      "destination": "https://trycaprock.com/$1", "permanent": true }
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "www.plugfile.com" }],
+      "destination": "https://plugfile.com/$1", "permanent": true }
   ],
   "headers": [
     {

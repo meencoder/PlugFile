@@ -13,12 +13,12 @@ import sys
 from pathlib import Path
 from textwrap import dedent
 
-# Make `wellplug` and `tests.*` importable regardless of how invoked.
+# Make `plugfile` and `tests.*` importable regardless of how invoked.
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from wellplug.tac_3_14 import compute_plug_program  # noqa: E402
+from plugfile.tac_3_14 import compute_plug_program  # noqa: E402
 from tests.fixtures.sample_wellbores import ALL_FIXTURES  # noqa: E402
 
 
@@ -80,8 +80,8 @@ def main() -> int:
         "# Phase 1A Validation Report",
         "",
         "Output of `scripts/validate_phase1a.py`. Every cement volume below ",
-        "comes from `wellplug.cement_volume` (deterministic, unit-tested) ",
-        "and every plug placement from `wellplug.tac_3_14.compute_plug_program`.",
+        "comes from `plugfile.cement_volume` (deterministic, unit-tested) ",
+        "and every plug placement from `plugfile.tac_3_14.compute_plug_program`.",
         "",
         "Five representative Texas wellbore geometries were exercised; one ",
         "triggers the `general` rule path, one triggers the BUQW-uncovered ",
@@ -93,7 +93,7 @@ def main() -> int:
     ]
 
     print("=" * 78)
-    print("WellPlug — Phase 1A Validation")
+    print("Plugfile — Phase 1A Validation")
     print("=" * 78)
 
     summary_rows = []

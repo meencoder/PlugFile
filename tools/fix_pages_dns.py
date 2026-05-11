@@ -19,7 +19,7 @@ Prereqs same as deploy_landing.py:
 
 Usage:
   python tools\fix_pages_dns.py
-  python tools\fix_pages_dns.py --domain kaproq.com --project-name caprock
+  python tools\fix_pages_dns.py --domain plugfile.com --project-name plugfile
 """
 
 from __future__ import annotations
@@ -124,7 +124,7 @@ def upsert_cname(token: str, zone_id: str, name: str,
         "content": target,
         "proxied": True,
         "ttl": 1,  # automatic
-        "comment": "Kaproq Pages: auto-attached by fix_pages_dns.py",
+        "comment": "Plugfile Pages: auto-attached by fix_pages_dns.py",
     }
     print(f"  creating CNAME {name} -> {target} (proxied)")
     return ok(cf("POST", f"/zones/{zone_id}/dns_records",
@@ -193,8 +193,8 @@ def wait_pages_active(token: str, account_id: str, project: str,
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--domain", default="kaproq.com")
-    p.add_argument("--project-name", default="caprock")
+    p.add_argument("--domain", default="plugfile.com")
+    p.add_argument("--project-name", default="plugfile")
     p.add_argument("--account-id", default=os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""))
     p.add_argument("--skip-www", action="store_true")
     args = p.parse_args()
