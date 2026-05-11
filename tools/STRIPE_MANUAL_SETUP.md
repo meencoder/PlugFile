@@ -109,8 +109,8 @@ friction now, your personal checking is fine.
 |---|---|
 | Public business name | `Plugfile` |
 | Doing-business-as (DBA) | `Plugfile` |
-| Statement descriptor | `KAPROQ COMPLIANCE` (18 chars; max 22) |
-| Shortened descriptor | `KAPROQ*` |
+| Statement descriptor | `PLUGFILE FILING` (18 chars; max 22) |
+| Shortened descriptor | `PLUGFILE*` |
 | Customer support email | `hello@plugfile.com` |
 | Customer support phone | optional; leave blank or use Google Voice |
 | Customer support address | your home address (required field) |
@@ -203,7 +203,7 @@ Once test mode works end-to-end:
 
 ## Common gotchas
 
-- **Statement descriptor** can't be changed for 14 days after first use. Pick `KAPROQ COMPLIANCE` carefully — typo fix requires waiting two weeks.
+- **Statement descriptor** can't be changed for 14 days after first use. Pick `PLUGFILE FILING` carefully — typo fix requires waiting two weeks.
 - **Refunds cost the Stripe processing fee** (you don't get back the 2.9% + $0.30). On a $1 deposit refund, you eat $0.33. At 100 refunds, that's $33 — small enough to ignore but worth knowing.
 - **Stripe holds an initial reserve** on new accounts (typically 5-10% of volume for 90 days). Your first ~$50 of deposits may not appear in your bank for 90 days. Documented behavior, not a bug.
 - **The `submit_type=book` flag** in the Payment Link makes Stripe's button say "Reserve" instead of "Pay" — set automatically by `stripe_setup.py`. If you ever recreate the link via the dashboard manually, set this option in Advanced settings.

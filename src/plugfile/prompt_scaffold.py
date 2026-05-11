@@ -62,22 +62,22 @@ from .lookups import Fetcher, FetcherError, MockFetcher
 
 
 def _select_fetcher() -> Fetcher:
-    """Choose fetcher based on CAPROCK_FETCHER env var.
+    """Choose fetcher based on PLUGFILE_FETCHER env var.
 
-    CAPROCK_FETCHER=real -> RRCRoRQFetcher (Phase 2A; live RRC scraper)
-    CAPROCK_FETCHER=mock -> MockFetcher (default; Phase 1A fixtures)
+    PLUGFILE_FETCHER=real -> RRCRoRQFetcher (Phase 2A; live RRC scraper)
+    PLUGFILE_FETCHER=mock -> MockFetcher (default; Phase 1A fixtures)
 
     Tests pass a Fetcher explicitly, so this only affects the
     dispatch_tool_call path used by the Anthropic SDK runtime.
     """
     import os as _os
-    if (_os.environ.get("CAPROCK_FETCHER") or "mock").lower() == "real":
+    if (_os.environ.get("PLUGFILE_FETCHER") or "mock").lower() == "real":
         try:
             from .lookups_rrc import RRCRoRQFetcher
             return RRCRoRQFetcher()
         except ImportError as e:
             raise FetcherError(
-                f"CAPROCK_FETCHER=real requires Phase 2A deps: {e}"
+                f"PLUGFILE_FETCHER=real requires Phase 2A deps: {e}"
             )
     return MockFetcher()
 from .narrative import transcript_to_narrative

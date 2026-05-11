@@ -67,7 +67,7 @@ PAYMENT_LINK_TAG = "plugfile_founders_deposit_link"
 
 CONFIRMATION_MESSAGE = (
     "Reserved. We'll email you when Plugfile opens to your district. "
-    "Charged to your card as **KAPROQ COMPLIANCE**. "
+    "Charged to your card as **PLUGFILE FILING**. "
     "Refundable any time before launch — email refund@plugfile.com."
 )
 

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Plugfile — Logo Variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 60px 28px; background: #FDFBF7;
+    font-family: Inter, system-ui, sans-serif; color: #1A1A1A;
+    line-height: 1.55;
+  }
+  h1 {
+    font-family: Fraunces, Georgia, serif; font-weight: 600;
+    font-size: 44px; letter-spacing: -0.02em; margin: 0 0 8px;
+  }
+  .lead { color: #4A4A4A; font-size: 17px; max-width: 720px; margin: 0 0 60px; }
+  .variant {
+    background: #FFFFFF; border: 1px solid #E8E4DA; border-radius: 12px;
+    margin: 0 auto 36px; max-width: 980px; padding: 36px 40px;
+  }
+  .variant h2 {
+    font-family: Fraunces, serif; font-weight: 600; font-size: 28px;
+    margin: 0 0 6px;
+  }
+  .variant .tag {
+    display: inline-block; font-family: JetBrains Mono, monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #C2410C; margin-bottom: 6px;
+  }
+  .variant p { color: #4A4A4A; font-size: 15px; margin: 8px 0 22px; max-width: 640px; }
+  .variant .rationale { font-size: 14px; color: #6B7280; }
+  .sizes {
+    display: flex; gap: 36px; align-items: center; flex-wrap: wrap;
+    padding: 28px 0; border-top: 1px dashed #E8E4DA;
+  }
+  .size-block { text-align: center; }
+  .size-block .label {
+    font-family: JetBrains Mono, monospace; font-size: 10px;
+    letter-spacing: 0.1em; color: #777; margin-top: 6px;
+  }
+  .dark-bg {
+    background: #14191F; padding: 18px; border-radius: 6px;
+    display: inline-block;
+  }
+  .lockup {
+    display: flex; align-items: center; gap: 14px; margin-top: 28px;
+    padding-top: 22px; border-top: 1px dashed #E8E4DA;
+  }
+  .lockup .wordmark {
+    font-family: Fraunces, serif; font-weight: 600; font-size: 32px;
+    letter-spacing: -0.025em; color: #1A1A1A;
+  }
+  .picker {
+    background: #14191F; color: #F4F1EA; padding: 36px 40px;
+    border-radius: 12px; max-width: 980px; margin: 60px auto 0;
+  }
+  .picker h2 {
+    font-family: Fraunces, serif; font-weight: 600; font-size: 24px;
+    color: #FCD34D; margin: 0 0 14px;
+  }
+  .picker ul { margin: 0; padding-left: 22px; }
+  .picker li { margin-bottom: 10px; color: #C7BDA8; }
+</style>
+</head>
+<body>
+
+<h1 style="max-width: 980px; margin-left: auto; margin-right: auto;">Plugfile — Logo Variants</h1>
+<p class="lead" style="max-width: 980px; margin-left: auto; margin-right: auto;">
+  Four contender directions, each applying different design principles. Live SVGs at three sizes (16/36/96px) so you can judge favicon-readability and hero-presence. Pick the one that feels right and I'll commit it across the codebase.
+</p>
+
+<!-- VARIANT A: Filed Document (current direction, refined) -->
+<div class="variant">
+  <span class="tag">Variant A · Filed Document</span>
+  <h2>The literal one</h2>
+  <p>A document silhouette with a folded top-right corner contains a vertical wellbore stack with three orange cement plugs. Both halves of the name are visually present: the document = "file", the wellbore = "plug". This is the version currently deployed.</p>
+  <div class="sizes">
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 28 25 L 95 25 L 122 52 L 122 135 L 28 135 Z" fill="#1F2937"/>
+        <path d="M 95 25 L 122 52 L 95 52 Z" fill="#FCD34D"/>
+        <rect x="65" y="60" width="20" height="65" fill="#0A0E14"/>
+        <rect x="65" y="68" width="20" height="9" fill="#D97706"/>
+        <rect x="65" y="88" width="20" height="9" fill="#D97706"/>
+        <rect x="65" y="108" width="20" height="9" fill="#D97706"/>
+      </svg>
+      <div class="label">16 · FAVICON</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 28 25 L 95 25 L 122 52 L 122 135 L 28 135 Z" fill="#1F2937"/>
+        <path d="M 95 25 L 122 52 L 95 52 Z" fill="#FCD34D"/>
+        <rect x="65" y="60" width="20" height="65" fill="#0A0E14"/>
+        <rect x="64" y="60" width="2" height="65" fill="#E5E7EB"/>
+        <rect x="84" y="60" width="2" height="65" fill="#E5E7EB"/>
+        <rect x="65" y="68" width="20" height="9" fill="#D97706"/>
+        <rect x="65" y="88" width="20" height="9" fill="#D97706"/>
+        <rect x="65" y="108" width="20" height="9" fill="#D97706"/>
+      </svg>
+      <div class="label">36 · HEADER</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 28 25 L 95 25 L 122 52 L 122 135 L 28 135 Z" fill="#1F2937"/>
+        <path d="M 95 25 L 122 52 L 95 52 Z" fill="#FCD34D"/>
+        <rect x="65" y="60" width="20" height="65" fill="#0A0E14"/>
+        <rect x="64" y="60" width="2" height="65" fill="#E5E7EB"/>
+        <rect x="84" y="60" width="2" height="65" fill="#E5E7EB"/>
+        <rect x="65" y="68" width="20" height="9" fill="#D97706"/>
+        <rect x="65" y="88" width="20" height="9" fill="#D97706"/>
+        <rect x="65" y="108" width="20" height="9" fill="#D97706"/>
+      </svg>
+      <div class="label">96 · HERO</div>
+    </div>
+    <div class="size-block">
+      <div class="dark-bg">
+        <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 28 25 L 95 25 L 122 52 L 122 135 L 28 135 Z" fill="#F4F1EA"/>
+          <path d="M 95 25 L 122 52 L 95 52 Z" fill="#FCD34D"/>
+          <rect x="65" y="60" width="20" height="65" fill="#1F2937"/>
+          <rect x="65" y="68" width="20" height="9" fill="#D97706"/>
+          <rect x="65" y="88" width="20" height="9" fill="#D97706"/>
+          <rect x="65" y="108" width="20" height="9" fill="#D97706"/>
+        </svg>
+      </div>
+      <div class="label">DARK MODE</div>
+    </div>
+  </div>
+  <div class="lockup">
+    <svg viewBox="0 0 150 150" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 28 25 L 95 25 L 122 52 L 122 135 L 28 135 Z" fill="#1F2937"/>
+      <path d="M 95 25 L 122 52 L 95 52 Z" fill="#FCD34D"/>
+      <rect x="65" y="60" width="20" height="65" fill="#0A0E14"/>
+      <rect x="65" y="68" width="20" height="9" fill="#D97706"/>
+      <rect x="65" y="88" width="20" height="9" fill="#D97706"/>
+      <rect x="65" y="108" width="20" height="9" fill="#D97706"/>
+    </svg>
+    <span class="wordmark">Plugfile</span>
+  </div>
+  <p class="rationale" style="margin-top: 18px;">
+    <strong>Principle:</strong> direct iconography — every element earns its place by mapping to a real product concept. <strong>Trade-off:</strong> at 16px favicon, the three plug bands blur into noise; the document shape stays recognizable.
+  </p>
+</div>
+
+<!-- VARIANT B: Stamped Seal -->
+<div class="variant">
+  <span class="tag">Variant B · Stamped Seal</span>
+  <h2>The authority one</h2>
+  <p>A circular seal — like an official stamp — with three concentric rings and the orange plug bars cutting horizontally through it. Communicates trust, audit-grade, regulatory authority. Reads as "officially filed" before you decode the plug detail.</p>
+  <div class="sizes">
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="75" cy="75" r="58" fill="#1F2937"/>
+        <circle cx="75" cy="75" r="48" fill="none" stroke="#FCD34D" stroke-width="2"/>
+        <rect x="22" y="60" width="106" height="8" fill="#D97706"/>
+        <rect x="22" y="82" width="106" height="8" fill="#D97706"/>
+      </svg>
+      <div class="label">16 · FAVICON</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="75" cy="75" r="58" fill="#1F2937"/>
+        <circle cx="75" cy="75" r="48" fill="none" stroke="#FCD34D" stroke-width="2"/>
+        <rect x="22" y="60" width="106" height="8" fill="#D97706"/>
+        <rect x="22" y="82" width="106" height="8" fill="#D97706"/>
+      </svg>
+      <div class="label">36 · HEADER</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="75" cy="75" r="58" fill="#1F2937"/>
+        <circle cx="75" cy="75" r="48" fill="none" stroke="#FCD34D" stroke-width="2"/>
+        <rect x="22" y="60" width="106" height="8" fill="#D97706"/>
+        <rect x="22" y="82" width="106" height="8" fill="#D97706"/>
+        <text x="75" y="55" text-anchor="middle" font-family="Fraunces, serif" font-weight="700" font-size="14" fill="#FCD34D" letter-spacing="2">FILED</text>
+      </svg>
+      <div class="label">96 · HERO</div>
+    </div>
+    <div class="size-block">
+      <div class="dark-bg">
+        <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="75" cy="75" r="58" fill="#F4F1EA"/>
+          <circle cx="75" cy="75" r="48" fill="none" stroke="#1F2937" stroke-width="2"/>
+          <rect x="22" y="60" width="106" height="8" fill="#D97706"/>
+          <rect x="22" y="82" width="106" height="8" fill="#D97706"/>
+        </svg>
+      </div>
+      <div class="label">DARK MODE</div>
+    </div>
+  </div>
+  <div class="lockup">
+    <svg viewBox="0 0 150 150" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="75" cy="75" r="58" fill="#1F2937"/>
+      <circle cx="75" cy="75" r="48" fill="none" stroke="#FCD34D" stroke-width="2"/>
+      <rect x="22" y="60" width="106" height="8" fill="#D97706"/>
+      <rect x="22" y="82" width="106" height="8" fill="#D97706"/>
+    </svg>
+    <span class="wordmark">Plugfile</span>
+  </div>
+  <p class="rationale" style="margin-top: 18px;">
+    <strong>Principle:</strong> circle = trust, authority, completeness (postage stamp, notary seal, government emblem). <strong>Trade-off:</strong> abstract — without context the orange bars could read as ledger lines, not cement plugs.
+  </p>
+</div>
+
+<!-- VARIANT C: P-Mark Monogram -->
+<div class="variant">
+  <span class="tag">Variant C · P-Mark Monogram</span>
+  <h2>The typographic one</h2>
+  <p>A bold serif "P" from the Fraunces typeface (matching the landing-page headers) with a single orange diagonal stroke representing the plug seal. Minimal, scales perfectly to favicon size, ties directly to the product name. Most "tech brand" of the four.</p>
+  <div class="sizes">
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="20" width="100" height="110" rx="14" fill="#1F2937"/>
+        <text x="75" y="115" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="120" fill="#FDFBF7">P</text>
+        <rect x="20" y="84" width="110" height="8" fill="#D97706" transform="rotate(-8 75 88)"/>
+      </svg>
+      <div class="label">16 · FAVICON</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="20" width="100" height="110" rx="14" fill="#1F2937"/>
+        <text x="75" y="115" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="120" fill="#FDFBF7">P</text>
+        <rect x="20" y="84" width="110" height="8" fill="#D97706" transform="rotate(-8 75 88)"/>
+      </svg>
+      <div class="label">36 · HEADER</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="20" width="100" height="110" rx="14" fill="#1F2937"/>
+        <text x="75" y="115" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="120" fill="#FDFBF7">P</text>
+        <rect x="20" y="84" width="110" height="8" fill="#D97706" transform="rotate(-8 75 88)"/>
+      </svg>
+      <div class="label">96 · HERO</div>
+    </div>
+    <div class="size-block">
+      <div class="dark-bg">
+        <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <rect x="25" y="20" width="100" height="110" rx="14" fill="#F4F1EA"/>
+          <text x="75" y="115" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="120" fill="#1F2937">P</text>
+          <rect x="20" y="84" width="110" height="8" fill="#D97706" transform="rotate(-8 75 88)"/>
+        </svg>
+      </div>
+      <div class="label">DARK MODE</div>
+    </div>
+  </div>
+  <div class="lockup">
+    <svg viewBox="0 0 150 150" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+      <rect x="25" y="20" width="100" height="110" rx="14" fill="#1F2937"/>
+      <text x="75" y="115" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="120" fill="#FDFBF7">P</text>
+      <rect x="20" y="84" width="110" height="8" fill="#D97706" transform="rotate(-8 75 88)"/>
+    </svg>
+    <span class="wordmark">Plugfile</span>
+  </div>
+  <p class="rationale" style="margin-top: 18px;">
+    <strong>Principle:</strong> a monogram is the strongest possible favicon — one shape, one letter, instantly recognizable. The orange diagonal "plug seal" adds product-specific meaning without complexity. <strong>Trade-off:</strong> the "file" metaphor is implicit (through the contained box shape) rather than literal.
+  </p>
+</div>
+
+<!-- VARIANT D: Strata Seal (geological abstraction) -->
+<div class="variant">
+  <span class="tag">Variant D · Strata Seal</span>
+  <h2>The abstract one</h2>
+  <p>Three horizontal slate bars of decreasing width, evoking geological strata viewed in profile — or a stacked plug seen sideways. A yellow surface line on top suggests grade level; the bottom orange band is the cement seal at depth. Most distinctive silhouette of the four; no document, no letter, pure geometry.</p>
+  <div class="sizes">
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+        <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+        <rect x="34" y="64" width="82" height="14" fill="#1F2937" opacity="0.85"/>
+        <rect x="44" y="86" width="62" height="14" fill="#1F2937" opacity="0.7"/>
+        <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+      </svg>
+      <div class="label">16 · FAVICON</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+        <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+        <rect x="34" y="64" width="82" height="14" fill="#1F2937" opacity="0.85"/>
+        <rect x="44" y="86" width="62" height="14" fill="#1F2937" opacity="0.7"/>
+        <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+      </svg>
+      <div class="label">36 · HEADER</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+        <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+        <rect x="34" y="64" width="82" height="14" fill="#1F2937" opacity="0.85"/>
+        <rect x="44" y="86" width="62" height="14" fill="#1F2937" opacity="0.7"/>
+        <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+      </svg>
+      <div class="label">96 · HERO</div>
+    </div>
+    <div class="size-block">
+      <div class="dark-bg">
+        <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+          <rect x="25" y="42" width="100" height="14" fill="#F4F1EA"/>
+          <rect x="34" y="64" width="82" height="14" fill="#F4F1EA" opacity="0.85"/>
+          <rect x="44" y="86" width="62" height="14" fill="#F4F1EA" opacity="0.7"/>
+          <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+        </svg>
+      </div>
+      <div class="label">DARK MODE</div>
+    </div>
+  </div>
+  <div class="lockup">
+    <svg viewBox="0 0 150 150" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+      <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+      <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+      <rect x="34" y="64" width="82" height="14" fill="#1F2937" opacity="0.85"/>
+      <rect x="44" y="86" width="62" height="14" fill="#1F2937" opacity="0.7"/>
+      <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+    </svg>
+    <span class="wordmark">Plugfile</span>
+  </div>
+  <p class="rationale" style="margin-top: 18px;">
+    <strong>Principle:</strong> geometric reduction — strip everything not load-bearing. The descending widths suggest depth (going down into the well); the orange band at the bottom seals it. Reads as "layered, sealed, filed" at any size. <strong>Trade-off:</strong> most abstract — needs the wordmark "Plugfile" alongside it for non-industry viewers to decode.
+  </p>
+</div>
+
+<!-- DECISION GUIDE -->
+<div class="picker">
+  <h2>How to choose</h2>
+  <ul>
+    <li><strong>If your buyer is a non-technical Texas operator</strong> who needs to immediately decode "this is a tool for filing my plug record" → <strong>Variant A (Filed Document)</strong>. Literal wins for non-tech audiences.</li>
+    <li><strong>If you want your brand to read "audit-grade, regulatory authority"</strong> alongside Pak/WolfePak/Quorum → <strong>Variant B (Stamped Seal)</strong>. Most institutional-looking.</li>
+    <li><strong>If you anticipate strong wordmark adoption</strong> (people will know "Plugfile" the name within the industry within 12 months) and you want a distinctive favicon → <strong>Variant C (P-Mark)</strong>. Cleanest at small sizes.</li>
+    <li><strong>If you want the most timeless, design-magazine-friendly look</strong>, willing to trade some literal meaning for graphic distinction → <strong>Variant D (Strata Seal)</strong>. The one that ages best.</li>
+  </ul>
+  <p style="margin-top: 22px; color: #C7BDA8; font-size: 14px;">
+    Tell me which variant resonates and I'll apply it across <code>landing/index.html</code>, <code>landing/for-engineers.html</code>, the two standalone SVGs in <code>branding/</code>, and add a matching <code>favicon.svg</code>.
+  </p>
+</div>
+
+<!-- D REFINED VARIANTS -->
+<div class="variant" style="margin-top: 60px;">
+  <span class="tag">Variant D · Refined (D1)</span>
+  <h2>D, but more confident</h2>
+  <p>Dropped the opacity gradient — all three slate bars are now solid. Widths alone communicate descent. Cleaner, reads as intentional design rather than draft.</p>
+  <div class="sizes">
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+        <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+        <rect x="34" y="64" width="82" height="14" fill="#1F2937"/>
+        <rect x="44" y="86" width="62" height="14" fill="#1F2937"/>
+        <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+      </svg>
+      <div class="label">16 · FAVICON</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+        <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+        <rect x="34" y="64" width="82" height="14" fill="#1F2937"/>
+        <rect x="44" y="86" width="62" height="14" fill="#1F2937"/>
+        <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+      </svg>
+      <div class="label">36 · HEADER</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+        <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+        <rect x="34" y="64" width="82" height="14" fill="#1F2937"/>
+        <rect x="44" y="86" width="62" height="14" fill="#1F2937"/>
+        <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+      </svg>
+      <div class="label">96 · HERO</div>
+    </div>
+  </div>
+  <div class="lockup">
+    <svg viewBox="0 0 150 150" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
+      <rect x="25" y="28" width="100" height="6" fill="#FCD34D"/>
+      <rect x="25" y="42" width="100" height="14" fill="#1F2937"/>
+      <rect x="34" y="64" width="82" height="14" fill="#1F2937"/>
+      <rect x="44" y="86" width="62" height="14" fill="#1F2937"/>
+      <rect x="44" y="108" width="62" height="14" fill="#D97706"/>
+    </svg>
+    <div>
+      <div class="wordmark" style="line-height: 1;">Plugfile</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #C2410C; margin-top: 4px;">Compliance, automated.</div>
+    </div>
+  </div>
+</div>
+
+<div class="variant">
+  <span class="tag">Variant D+ · Framed (D2)</span>
+  <h2>D, but with a "page" frame</h2>
+  <p>Same strata stack, now wrapped in a thin slate outline rectangle. The frame is the silent "file" half — bars are now <em>bars on a page</em>. Adds explanatory meaning without breaking the geometry. This is the version I'd recommend if you're worried about resonance.</p>
+  <div class="sizes">
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+        <rect x="18" y="20" width="114" height="116" fill="none" stroke="#1F2937" stroke-width="3" rx="4"/>
+        <rect x="28" y="32" width="94" height="6" fill="#FCD34D"/>
+        <rect x="28" y="46" width="94" height="13" fill="#1F2937"/>
+        <rect x="36" y="66" width="78" height="13" fill="#1F2937"/>
+        <rect x="46" y="86" width="58" height="13" fill="#1F2937"/>
+        <rect x="46" y="106" width="58" height="13" fill="#D97706"/>
+      </svg>
+      <div class="label">16 · FAVICON</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <rect x="18" y="20" width="114" height="116" fill="none" stroke="#1F2937" stroke-width="3" rx="4"/>
+        <rect x="28" y="32" width="94" height="6" fill="#FCD34D"/>
+        <rect x="28" y="46" width="94" height="13" fill="#1F2937"/>
+        <rect x="36" y="66" width="78" height="13" fill="#1F2937"/>
+        <rect x="46" y="86" width="58" height="13" fill="#1F2937"/>
+        <rect x="46" y="106" width="58" height="13" fill="#D97706"/>
+      </svg>
+      <div class="label">36 · HEADER</div>
+    </div>
+    <div class="size-block">
+      <svg viewBox="0 0 150 150" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <rect x="18" y="20" width="114" height="116" fill="none" stroke="#1F2937" stroke-width="3" rx="4"/>
+        <rect x="28" y="32" width="94" height="6" fill="#FCD34D"/>
+        <rect x="28" y="46" width="94" height="13" fill="#1F2937"/>
+        <rect x="36" y="66" width="78" height="13" fill="#1F2937"/>
+        <rect x="46" y="86" width="58" height="13" fill="#1F2937"/>
+        <rect x="46" y="106" width="58" height="13" fill="#D97706"/>
+      </svg>
+      <div class="label">96 · HERO</div>
+    </div>
+    <div class="size-block">
+      <div class="dark-bg">
+        <svg viewBox="0 0 150 150" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <rect x="18" y="20" width="114" height="116" fill="none" stroke="#F4F1EA" stroke-width="3" rx="4"/>
+          <rect x="28" y="32" width="94" height="6" fill="#FCD34D"/>
+          <rect x="28" y="46" width="94" height="13" fill="#F4F1EA"/>
+          <rect x="36" y="66" width="78" height="13" fill="#F4F1EA"/>
+          <rect x="46" y="86" width="58" height="13" fill="#F4F1EA"/>
+          <rect x="46" y="106" width="58" height="13" fill="#D97706"/>
+        </svg>
+      </div>
+      <div class="label">DARK MODE</div>
+    </div>
+  </div>
+  <div class="lockup">
+    <svg viewBox="0 0 150 150" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+      <rect x="18" y="20" width="114" height="116" fill="none" stroke="#1F2937" stroke-width="3" rx="4"/>
+      <rect x="28" y="32" width="94" height="6" fill="#FCD34D"/>
+      <rect x="28" y="46" width="94" height="13" fill="#1F2937"/>
+      <rect x="36" y="66" width="78" height="13" fill="#1F2937"/>
+      <rect x="46" y="86" width="58" height="13" fill="#1F2937"/>
+      <rect x="46" y="106" width="58" height="13" fill="#D97706"/>
+    </svg>
+    <div>
+      <div class="wordmark" style="line-height: 1;">Plugfile</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #C2410C; margin-top: 4px;">Compliance, automated.</div>
+    </div>
+  </div>
+  <p class="rationale" style="margin-top: 18px;">
+    <strong>Why this works:</strong> the outer rectangle reads as a page/document edge — operators see "bars on paper" before they decode the strata metaphor. Geometric purity preserved (still just rectangles and one outline). At 16px the frame is the dominant readable shape, which is exactly what you want for favicon recognition.
+  </p>
+</div>
+
+</body>
+</html>
