@@ -144,6 +144,36 @@ callout: *"Plugfile outputs are reviewed for compliance by [Name],
 former RRC District [N] inspector."* That line is held back until the
 retainer is real.
 
+## Employment compliance (Big 4 OBA disclosure)
+
+The founder is employed at a Big 4 firm. The spouse operates Plugfile
+publicly; the founder has economic interest (joint bank account) and
+technical involvement. This triggers Outside Business Activity (OBA)
+disclosure obligations regardless of public-facing identity.
+
+**Required before LinkedIn Company Page goes live:**
+
+1. *Review employment agreement* — locate the OBA / outside employment
+   / personal independence section. Confirm the disclosure threshold
+   (some firms exempt de minimis revenue under $5K/year).
+
+2. *Confirm no client conflict* — verify no current Big 4 engagements
+   involve Texas O&G operators who could be Plugfile customers.
+
+3. *Submit OBA disclosure form* — internal ethics/compliance portal
+   (search intranet for "outside business activity" or "personal
+   independence"). Fields: business name (Plugfile), nature (SaaS
+   compliance software for Texas RRC Form W-3), role (minor technical
+   contributor; spouse is owner/operator), time (~5 hrs/week evenings
+   and weekends), current revenue (de minimis — $1 deposits only).
+
+4. *Disclosure is confidential* — goes to Ethics/Independence, not
+   manager or public record.
+
+Risk of non-disclosure is termination for cause; risk of disclosure is
+near-zero given the niche product and de minimis revenue. Disclose first,
+then launch LinkedIn ads.
+
 ## Cost and timeline
 
 Total residual cash spend through validation: $2.5–3.4K (two expert
