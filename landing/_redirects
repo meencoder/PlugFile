@@ -1,8 +1,8 @@
-# Legacy www -> apex
+# Canonicalize www -> apex
 https://www.plugfile.com/* https://plugfile.com/:splat 301!
 
-# Legacy domain -- redirect old trycaprock.com traffic to plugfile.com
-# (Note: actual production redirect lives at Cloudflare zone-level rules,
-# this file is a fallback for the Pages-attached domains.)
+# Legacy domains -> plugfile.com
 https://trycaprock.com/* https://plugfile.com/:splat 301!
 https://www.trycaprock.com/* https://plugfile.com/:splat 301!
+https://kaproq.com/* https://plugfile.com/:splat 301!
+https://www.kaproq.com/* https://plugfile.com/:splat 301!
