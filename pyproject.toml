@@ -30,6 +30,7 @@ dev = [
 [project.scripts]
 plugfile-rrc = "plugfile.lookups_rrc:_cli_main"
 plugfile-pdf = "plugfile.pdf_export:_cli_main"
+plugfile-gau = "plugfile.gau_parser:_cli_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/plugfile"]
