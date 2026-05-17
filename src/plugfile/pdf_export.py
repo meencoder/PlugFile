@@ -78,8 +78,8 @@ W3_COORDS: dict[str, FieldCoord] = {
     "operator_title":             FieldCoord(0, 280.0, 70.0, 85.0),
     "certification_date":         FieldCoord(0, 380.0, 70.0, 70.0),
     "cementing_company":          FieldCoord(0, 380.0, 150.0, 240.0),
-    "buqw_depth_ft":              FieldCoord(1, 130.0, 655.0, 100.0),
-    "gau_letter_reference":       FieldCoord(1, 130.0, 640.0, 200.0, 8.0),
+    "buqw_depth_ft":              FieldCoord(1, 90.0,  655.0, 90.0),
+    "gau_letter_reference":       FieldCoord(1, 210.0, 655.0, 175.0, 8.0),
     "surface_restoration_narrative": FieldCoord(1, 36.0, 250.0, 540.0, 8.0),
 }
 
@@ -205,6 +205,9 @@ def _build_overlay(form: W3Form, *, tier: Tier) -> bytes:
         v = getattr(form, name, None)
         if v is None:
             continue
+        # API number: strip "42-" state-code prefix — it is pre-printed on the form.
+        if name == "api_number" and isinstance(v, str) and v.upper().startswith("42-"):
+            v = v[3:]
         _draw_value(c, coord, v)
 
     _draw_plug_grid(c, form)
@@ -222,7 +225,11 @@ def _build_overlay(form: W3Form, *, tier: Tier) -> bytes:
         v = getattr(form, name, None)
         if v is None:
             continue
-        _draw_value(c, coord, v)
+        # Narrative needs word-wrap; all other page-1 fields are single-line.
+        if name == "surface_restoration_narrative":
+            _draw_wrapped(c, coord, v)
+        else:
+            _draw_value(c, coord, v)
 
     if tier == "free":
         _draw_watermark(c)
@@ -239,6 +246,44 @@ def _draw_value(c: "canvas.Canvas", coord: FieldCoord, value: Any) -> None:
     c.setFont("Helvetica", coord.font_size)
     fitted = _fit_text(s, coord.max_width, coord.font_size)
     c.drawString(coord.x, coord.y, fitted)
+
+
+def _draw_wrapped(c: "canvas.Canvas", coord: FieldCoord, value: Any,
+                  min_y: float = 40.0) -> None:
+    """Word-wrap ``value`` across multiple lines starting at coord.(x, y).
+
+    Each successive line is drawn ``font_size + 2`` points lower.  Stops when
+    ``min_y`` is reached so text never runs off the bottom of the page.
+    """
+    s = _format_scalar(value)
+    if not s:
+        return
+    c.setFont("Helvetica", coord.font_size)
+    line_h = coord.font_size + 2.0
+    avg_glyph = coord.font_size * 0.55
+    chars_per_line = max(1, int(coord.max_width / avg_glyph))
+
+    # Word-wrap
+    words = s.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = (current + " " + word).strip()
+        if len(candidate) <= chars_per_line:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+
+    y = coord.y
+    for line in lines:
+        if y < min_y:
+            break
+        c.drawString(coord.x, y, line)
+        y -= line_h
 
 
 def _draw_plug_grid(c: "canvas.Canvas", form: W3Form) -> None:
