@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "plugfile"
-version = "0.3.0"
+version = "0.4.0"
 description = "Deterministic tooling + LLM prompt scaffold for Texas RRC W-3 well-plugging compliance (TAC §3.14)."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -26,11 +26,17 @@ dev = [
   "responses>=0.25",
   "openpyxl>=3.1",
 ]
+web = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "python-multipart>=0.0.9",
+]
 
 [project.scripts]
-plugfile-rrc = "plugfile.lookups_rrc:_cli_main"
-plugfile-pdf = "plugfile.pdf_export:_cli_main"
-plugfile-gau = "plugfile.gau_parser:_cli_main"
+plugfile-rrc   = "plugfile.lookups_rrc:_cli_main"
+plugfile-pdf   = "plugfile.pdf_export:_cli_main"
+plugfile-gau   = "plugfile.gau_parser:_cli_main"
+plugfile-serve = "plugfile.api:_cli_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/plugfile"]

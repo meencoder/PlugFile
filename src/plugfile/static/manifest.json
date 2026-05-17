@@ -1,0 +1,11 @@
+{
+  "name": "Plugfile — W-3 Assistant",
+  "short_name": "Plugfile",
+  "description": "Voice-first W-3 well plugging record assistant for Texas RRC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e3a5f",
+  "orientation": "portrait-primary",
+  "icons": []
+}

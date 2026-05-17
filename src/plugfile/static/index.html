@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Plugfile">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="stylesheet" href="/static/style.css">
+  <title>Plugfile — W-3 Assistant</title>
+</head>
+<body>
+
+<header>
+  <div class="logo">Plugfile</div>
+  <div class="step-bar">
+    <div class="step-pip active" id="pip1"></div>
+    <div class="step-pip"        id="pip2"></div>
+    <div class="step-pip"        id="pip3"></div>
+    <div class="step-pip"        id="pip4"></div>
+    <div class="step-pip"        id="pip5"></div>
+    <span class="step-label" id="step-name">Well</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================================================ Step 1: Well lookup -->
+  <section class="step active" data-step="1">
+    <h2>Look up your well</h2>
+    <p class="hint">Enter the Texas API number for the well you plugged.</p>
+
+    <div class="field">
+      <label for="api-number">API Number</label>
+      <input id="api-number" type="text" placeholder="42-XXX-XXXXX"
+             inputmode="numeric" autocomplete="off" autocorrect="off">
+    </div>
+
+    <div id="well-result" class="result-card hidden"></div>
+
+    <button id="btn-lookup" class="btn-primary">Look up well →</button>
+    <button id="btn-skip-lookup" class="btn-ghost">Continue without lookup</button>
+  </section>
+
+  <!-- ============================================== Step 2: GAU letter -->
+  <section class="step" data-step="2">
+    <h2>GAU letter</h2>
+    <p class="hint">Upload your RRC Groundwater Advisory Unit letter. Plugfile reads the BUQW depth automatically.</p>
+
+    <label class="upload-area" for="gau-file">
+      <input type="file" id="gau-file" accept=".pdf" class="sr-only">
+      <span class="upload-icon">📄</span>
+      <span class="upload-label" id="gau-upload-label">Tap to upload GAU letter PDF</span>
+    </label>
+
+    <div id="gau-result" class="result-card hidden"></div>
+
+    <div id="manual-buqw-group" class="hidden">
+      <hr class="divider">
+      <div class="field">
+        <label for="manual-buqw">BUQW Depth (ft)</label>
+        <input id="manual-buqw" type="number" placeholder="e.g. 1500" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label for="manual-gau-ref">GAU Reference (optional)</label>
+        <input id="manual-gau-ref" type="text" placeholder="e.g. GAU-2024-03-12-Pecos-21874">
+      </div>
+    </div>
+
+    <button id="btn-step2-next"   class="btn-primary" disabled>Continue →</button>
+    <button id="btn-enter-buqw-manually" class="btn-ghost">Enter BUQW depth manually</button>
+    <button id="btn-step2-skip"   class="btn-ghost">Skip — no GAU letter</button>
+  </section>
+
+  <!-- ============================================== Step 3: Voice -->
+  <section class="step" data-step="3">
+    <h2>Describe the restoration</h2>
+    <p class="hint">Tap the mic and dictate what you did at the wellsite — or type below.</p>
+
+    <button id="btn-record" class="btn-mic" type="button">
+      <span class="mic-icon">🎤</span>
+      <span class="mic-lbl">Tap to record</span>
+    </button>
+
+    <div id="rec-indicator" class="rec-indicator hidden">
+      <span class="pulse-dot"></span> Recording — tap to stop
+    </div>
+
+    <textarea id="transcript"
+      placeholder="Your dictation appears here — or type directly…"></textarea>
+
+    <p class="example-text">
+      Example: "Cut the casing at 3 feet below grade and welded a 24-inch steel plate to the stub.
+      Filled the cellar with caliche. Removed wellhead and pumping unit.
+      Re-seeded with native grass, graded and contoured the location.
+      Work completed on May 16, 2026."
+    </p>
+
+    <button id="btn-process" class="btn-primary">Extract restoration details →</button>
+  </section>
+
+  <!-- ============================================== Step 4: Review -->
+  <section class="step" data-step="4">
+    <h2>Review &amp; sign</h2>
+    <p class="hint">Verify the extracted details and edit the narrative if needed before generating the PDF.</p>
+
+    <div id="slots-grid" class="slots-grid"></div>
+
+    <div id="warn-box" class="warn-box hidden"></div>
+
+    <div class="field">
+      <label for="narrative-edit">Section IX Narrative</label>
+      <textarea id="narrative-edit" rows="7"></textarea>
+    </div>
+
+    <hr class="divider">
+
+    <div class="field-row">
+      <div class="field">
+        <label for="sig-name">Your name</label>
+        <input id="sig-name" type="text" placeholder="Full name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="sig-title">Title</label>
+        <input id="sig-title" type="text" value="Operator Representative">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="cert-date">Certification date</label>
+      <input id="cert-date" type="date">
+    </div>
+
+    <button id="btn-generate" class="btn-primary">Generate W-3 PDF →</button>
+  </section>
+
+  <!-- ============================================== Step 5: Download -->
+  <section class="step" data-step="5">
+    <h2>Your W-3 is ready</h2>
+    <p class="hint">Print in duplicate. Sign both copies. Deliver to your RRC District Office within 30 days of plugging.</p>
+
+    <a id="download-link" class="btn-download" href="#" download>
+      ⬇ Download W-3 PDF
+    </a>
+
+    <div class="checklist">
+      <h3>Before you file</h3>
+      <ul>
+        <li>☐ Print two copies</li>
+        <li>☐ Sign both copies</li>
+        <li>☐ Attach a copy of the GAU letter</li>
+        <li>☐ Deliver to your RRC District Office — or mail with return receipt</li>
+        <li>☐ File within 30 days of plugging date</li>
+      </ul>
+    </div>
+
+    <button id="btn-restart" class="btn-ghost" style="margin-top:24px">Start a new filing</button>
+  </section>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
