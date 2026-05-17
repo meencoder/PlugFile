@@ -333,6 +333,37 @@ def parse_gau_text(text: str) -> GauParseResult:
     )
 
 
+def _pick_ocr_model(client) -> str:  # type: ignore[valid-type]
+    """Return the best available Claude model for OCR.
+
+    Priority:
+      1. ``PLUGFILE_LLM_MODEL`` env var (explicit user override).
+      2. Auto-discover via ``client.models.list()`` — picks the first
+         haiku-class model, then sonnet, then any Claude model.
+         Works with any Anthropic SDK version that exposes the Models API.
+      3. Hard-coded fallback (may fail if that model is since deprecated).
+    """
+    import os
+
+    override = os.environ.get("PLUGFILE_LLM_MODEL", "").strip()
+    if override:
+        return override
+
+    # Auto-discover: find the cheapest/fastest currently available model.
+    try:
+        available_ids = [m.id for m in client.models.list().data]
+        for preference in ("haiku", "sonnet", "claude"):
+            found = next(
+                (mid for mid in available_ids if preference in mid.lower()), None
+            )
+            if found:
+                return found
+    except Exception:
+        pass  # SDK too old or no network — fall through to hardcoded name
+
+    return "claude-haiku-4-5"  # last resort; set PLUGFILE_LLM_MODEL to override
+
+
 def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
     """Send a scanned GAU letter PDF to Claude for OCR transcription.
 
@@ -343,9 +374,13 @@ def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
     ``GauParseError`` with a user-friendly message directing the operator
     to enter the BUQW depth manually.
 
-    The function sends the raw PDF bytes as a base64-encoded document to
-    ``claude-3-5-haiku-20241022`` (or the model in ``PLUGFILE_LLM_MODEL``),
-    asking it to transcribe all visible text.  The returned text is then
+    Model selection (highest priority first):
+      1. ``PLUGFILE_LLM_MODEL`` env var
+      2. Auto-discovered via ``client.models.list()`` (picks fastest available)
+      3. Hardcoded ``claude-haiku-4-5`` as last resort
+
+    The function sends the raw PDF bytes as a base64-encoded document,
+    asking Claude to transcribe all visible text.  The returned text is then
     parsed by the normal ``parse_gau_text`` regex pipeline.
     """
     import base64
@@ -367,10 +402,10 @@ def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
             "pip install anthropic — or enter BUQW depth manually."
         ) from exc
 
-    model = os.environ.get("PLUGFILE_LLM_MODEL", "claude-3-5-haiku-20241022")
+    client = _ant.Anthropic()
+    model = _pick_ocr_model(client)
     pdf_b64 = base64.standard_b64encode(pdf_bytes).decode()
 
-    client = _ant.Anthropic()
     try:
         response = client.messages.create(
             model=model,
@@ -404,7 +439,9 @@ def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
         )
     except Exception as exc:
         raise GauParseError(
-            f"Claude OCR call failed ({exc}). Enter BUQW depth manually."
+            f"Claude OCR call failed ({exc}). "
+            f"Model used: {model!r}. "
+            "Override with: $env:PLUGFILE_LLM_MODEL = 'your-model-id'"
         ) from exc
 
     return response.content[0].text

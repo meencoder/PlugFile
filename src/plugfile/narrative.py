@@ -448,7 +448,7 @@ def llm_fill_missing_slots(
     facts: SurfaceRestorationFacts,
     transcript: str,
     *,
-    model: str = "claude-haiku-3-5-20241022",
+    model: str = "claude-haiku-4-5",
     only_slots: set[str] | None = None,
 ) -> SurfaceRestorationFacts:
     """Invoke Claude to fill any slots the regex layer missed.
@@ -745,7 +745,7 @@ def transcript_to_narrative(
     well_context: dict | None = None,
     fallback_year: int | None = None,
     use_llm_fallback: bool | None = None,
-    llm_model: str = "claude-haiku-3-5-20241022",
+    llm_model: str = "claude-haiku-4-5",
 ) -> tuple[str, SurfaceRestorationFacts, list[ExtractionWarning]]:
     """Convenience: extract -> [optional LLM fill] -> draft.
 
