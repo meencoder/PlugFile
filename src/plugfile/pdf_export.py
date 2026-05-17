@@ -73,13 +73,13 @@ W3_COORDS: dict[str, FieldCoord] = {
     "total_depth_ft":             FieldCoord(0, 113.0, 511.0, 80.0),
     "spud_date":                  FieldCoord(0, 472.0, 533.0, 90.0),
     "completion_date":            FieldCoord(0, 472.0, 511.0, 90.0),
-    "plugging_date":              FieldCoord(0, 472.0, 480.0, 90.0),
+    "plugging_date":              FieldCoord(0, 472.0, 490.0, 90.0),
     "operator_signature_name":    FieldCoord(0, 72.0, 70.0, 200.0),
     "operator_title":             FieldCoord(0, 280.0, 70.0, 85.0),
     "certification_date":         FieldCoord(0, 380.0, 70.0, 70.0),
     "cementing_company":          FieldCoord(0, 380.0, 150.0, 240.0),
     "buqw_depth_ft":              FieldCoord(1, 90.0,  655.0, 90.0),
-    "gau_letter_reference":       FieldCoord(1, 210.0, 655.0, 175.0, 8.0),
+    "gau_letter_reference":       FieldCoord(1, 225.0, 655.0, 160.0, 8.0),
     "surface_restoration_narrative": FieldCoord(1, 36.0, 250.0, 540.0, 8.0),
 }
 
