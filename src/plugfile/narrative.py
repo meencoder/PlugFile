@@ -360,25 +360,227 @@ def extract_facts_from_transcript(
     return facts, warnings
 
 
+_LLM_SLOT_TOOL: dict = {
+    "name": "record_surface_restoration_slots",
+    "description": (
+        "Record surface-restoration facts extracted from the operator's "
+        "voice transcript.  Set a field to null if the transcript does not "
+        "mention it — never invent or infer facts not stated by the operator."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "casing_cut_depth_ft": {
+                "type": ["number", "null"],
+                "description": "Depth in feet below ground level where casing was cut",
+            },
+            "cap_type": {
+                "type": ["string", "null"],
+                "description": "Material of cap welded to casing stub (e.g. 'steel plate')",
+            },
+            "cap_dimensions": {
+                "type": ["string", "null"],
+                "description": "Physical dimensions of the cap (e.g. '24 inch x 24 inch x 1/4 inch')",
+            },
+            "cellar_filled": {
+                "type": ["boolean", "null"],
+                "description": "True if the cellar was backfilled",
+            },
+            "cellar_fill_material": {
+                "type": ["string", "null"],
+                "description": "Material used to fill cellar (e.g. 'caliche', 'native soil')",
+            },
+            "equipment_removed": {
+                "type": ["array", "null"],
+                "items": {"type": "string"},
+                "description": "List of equipment items removed from the location",
+            },
+            "vegetation_action": {
+                "type": ["string", "null"],
+                "description": "Vegetation restoration action (e.g. 're-seeded native grass')",
+            },
+            "grading_action": {
+                "type": ["string", "null"],
+                "description": "Grading or levelling action (e.g. 'graded and contoured')",
+            },
+            "access_road_status": {
+                "type": ["string", "null"],
+                "description": "Status of access road ('removed', 'retained per surface owner', etc.)",
+            },
+            "fencing_status": {
+                "type": ["string", "null"],
+                "description": "Status of fencing ('removed', 'retained', 'repaired')",
+            },
+            "date_of_work": {
+                "type": ["string", "null"],
+                "description": "ISO date (YYYY-MM-DD) when surface restoration work was completed",
+            },
+            "surface_owner_consent": {
+                "type": ["string", "null"],
+                "description": "Surface owner consent status as stated by the operator",
+            },
+            "sensitive_surface_notes": {
+                "type": ["string", "null"],
+                "description": "Notes about environmentally sensitive surface features (wetlands, etc.)",
+            },
+        },
+        # No required fields — Claude returns null for anything not mentioned
+        "required": [],
+    },
+}
+
+_LLM_SYSTEM_PROMPT = """\
+You are a regulatory data-extraction assistant for Texas oil-and-gas plugging records.
+Your sole job is to extract surface-restoration facts from an operator's voice transcript.
+
+Rules:
+1. Extract ONLY what the operator explicitly stated. Never infer, assume, or fabricate.
+2. If a slot is not mentioned in the transcript, return null for that slot.
+3. You MUST call the record_surface_restoration_slots tool. Do not reply in plain text.
+4. Dates must be ISO format (YYYY-MM-DD) when a full date is given.
+5. Equipment items must match standard labels: wellhead, tubing string, pumping unit,
+   rod string, separator, heater treater, tank battery, flowlines, gas meter,
+   compressor, salt water disposal line.
+"""
+
+
 def llm_fill_missing_slots(
     facts: SurfaceRestorationFacts,
     transcript: str,
+    *,
+    model: str = "claude-haiku-3-5-20241022",
+    only_slots: set[str] | None = None,
 ) -> SurfaceRestorationFacts:
-    """Phase-2 hook: invoke an LLM to extract any slots the regex layer
-    missed. Not implemented in Phase 1C — keeps tests deterministic and
-    avoids per-CI-run LLM cost.
+    """Invoke Claude to fill any slots the regex layer missed.
 
-    Production wiring (Phase 2) would:
-      1. Build a prompt listing the still-missing slots and the transcript.
-      2. Use Anthropic API with a JSON-mode response specifying the slots.
-      3. Merge the LLM's slot values into `facts`, marking provenance as
-         `llm:<model_id>` so audit logs distinguish regex vs LLM extraction.
+    Phase 2D implementation.  Guarded by the ``PLUGFILE_LLM_FALLBACK``
+    environment variable — callers should check the flag before calling
+    this function, or use ``transcript_to_narrative(use_llm_fallback=True)``.
+
+    Parameters
+    ----------
+    facts:
+        Facts object already partially populated by the regex extractor.
+        Regex-filled slots are NOT overwritten.
+    transcript:
+        The operator's raw voice/text dictation.
+    model:
+        Anthropic model ID.  Defaults to Haiku (fast, cheap).
+        Override with ``PLUGFILE_LLM_MODEL`` env var.
+    only_slots:
+        If provided, only ask the LLM about these specific slot names.
+        Defaults to all still-missing slots.
+
+    Returns
+    -------
+    SurfaceRestorationFacts
+        A new facts object with any LLM-extracted slots merged in.
+        Provenance for LLM-filled slots is marked as ``llm:<model_id>``.
+
+    Raises
+    ------
+    ImportError
+        If ``anthropic`` is not installed.
+    RuntimeError
+        If the Anthropic API call fails.
     """
-    raise NotImplementedError(
-        "llm_fill_missing_slots is a Phase-2 stub. Phase 1C uses the "
-        "regex-only extractor; if a slot is missing the operator/LLM "
-        "should supply it via the W3Form override path."
+    import os
+
+    try:
+        import anthropic as _anthropic
+    except ImportError as exc:
+        raise ImportError(
+            "anthropic package is required for LLM fallback. "
+            "Install with: pip install anthropic"
+        ) from exc
+
+    # Allow model override via env var
+    effective_model = os.environ.get("PLUGFILE_LLM_MODEL", model)
+
+    # Determine which slots are still empty
+    filled = facts.filled_slots()
+    all_slots = {
+        "casing_cut_depth_ft", "cap_type", "cap_dimensions",
+        "cellar_filled", "cellar_fill_material", "equipment_removed",
+        "vegetation_action", "grading_action", "access_road_status",
+        "fencing_status", "date_of_work", "surface_owner_consent",
+        "sensitive_surface_notes",
+    }
+    missing = (only_slots or all_slots) - filled
+    if not missing:
+        return facts  # nothing to fill — skip the API call
+
+    missing_list = "\n".join(f"  - {s}" for s in sorted(missing))
+    user_msg = (
+        f"Transcript:\n\"\"\"\n{transcript}\n\"\"\"\n\n"
+        f"Slots still missing after regex extraction:\n{missing_list}\n\n"
+        "Call record_surface_restoration_slots with the values you find. "
+        "Use null for any slot not mentioned."
     )
+
+    client = _anthropic.Anthropic()
+    try:
+        response = client.messages.create(
+            model=effective_model,
+            max_tokens=512,
+            system=_LLM_SYSTEM_PROMPT,
+            tools=[_LLM_SLOT_TOOL],
+            tool_choice={"type": "tool", "name": "record_surface_restoration_slots"},
+            messages=[{"role": "user", "content": user_msg}],
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Anthropic API call failed during LLM slot extraction: {exc}"
+        ) from exc
+
+    # Extract the tool_use block
+    tool_block = next(
+        (b for b in response.content if b.type == "tool_use"),
+        None,
+    )
+    if tool_block is None:
+        raise RuntimeError(
+            "LLM did not call the expected tool. "
+            "Response stop_reason: " + str(response.stop_reason)
+        )
+
+    slots: dict = tool_block.input
+    prov_tag = f"llm:{effective_model}"
+
+    # Merge into a copy of facts — never overwrite regex-filled slots
+    import copy
+    new_facts = copy.deepcopy(facts)
+
+    def _set(slot: str, value) -> None:
+        if value is None:
+            return
+        if slot in filled:
+            return  # regex already got this — don't overwrite
+        setattr(new_facts, slot, value)
+        new_facts.provenance[slot] = prov_tag
+
+    _set("casing_cut_depth_ft", slots.get("casing_cut_depth_ft"))
+    _set("cap_type", slots.get("cap_type"))
+    _set("cap_dimensions", slots.get("cap_dimensions"))
+    _set("cellar_filled", slots.get("cellar_filled"))
+    _set("cellar_fill_material", slots.get("cellar_fill_material"))
+    _set("vegetation_action", slots.get("vegetation_action"))
+    _set("grading_action", slots.get("grading_action"))
+    _set("access_road_status", slots.get("access_road_status"))
+    _set("fencing_status", slots.get("fencing_status"))
+    _set("date_of_work", slots.get("date_of_work"))
+    _set("surface_owner_consent", slots.get("surface_owner_consent"))
+    _set("sensitive_surface_notes", slots.get("sensitive_surface_notes"))
+
+    # equipment_removed is a list — append new items, no duplicates
+    if "equipment_removed" not in filled:
+        llm_equip = slots.get("equipment_removed") or []
+        if llm_equip:
+            combined = sorted(set(new_facts.equipment_removed) | set(llm_equip))
+            new_facts.equipment_removed = combined
+            new_facts.provenance["equipment_removed"] = prov_tag
+
+    return new_facts
 
 
 # ---- drafter ---------------------------------------------------------------
@@ -542,16 +744,51 @@ def transcript_to_narrative(
     *,
     well_context: dict | None = None,
     fallback_year: int | None = None,
+    use_llm_fallback: bool | None = None,
+    llm_model: str = "claude-haiku-3-5-20241022",
 ) -> tuple[str, SurfaceRestorationFacts, list[ExtractionWarning]]:
-    """Convenience: extract -> draft. Returns the narrative, the facts, and
-    the union of warnings from both stages.
+    """Convenience: extract -> [optional LLM fill] -> draft.
+
+    Returns the narrative, the final facts, and the union of warnings from
+    all stages.
+
+    Parameters
+    ----------
+    transcript:
+        The operator's raw voice/text dictation.
+    well_context:
+        Optional dict with keys api_number, lease_name, well_number, county
+        used to personalise the narrative opener.
+    fallback_year:
+        Year to assume when the transcript says a month+day but no year.
+    use_llm_fallback:
+        ``True``  — always call the LLM to fill any slots regex missed.
+        ``False`` — never call the LLM even if the env var is set.
+        ``None``  — (default) honour the ``PLUGFILE_LLM_FALLBACK`` env var.
+                    Any value of ``1``, ``true``, or ``yes`` (case-insensitive)
+                    enables the LLM call.
+    llm_model:
+        Anthropic model ID to use for the fallback.  Overridden by the
+        ``PLUGFILE_LLM_MODEL`` env var.
     """
+    import os
+
     facts, ext_warnings = extract_facts_from_transcript(
         transcript, fallback_year=fallback_year,
     )
+
+    # Resolve the LLM flag: explicit bool wins, else check env var.
+    if use_llm_fallback is None:
+        flag_val = os.environ.get("PLUGFILE_LLM_FALLBACK", "").strip().lower()
+        use_llm_fallback = flag_val in ("1", "true", "yes")
+
+    if use_llm_fallback:
+        facts = llm_fill_missing_slots(facts, transcript, model=llm_model)
+
     narrative, draft_warnings = draft_narrative(
         facts, well_context=well_context,
     )
+
     # De-duplicate warnings by (slot, severity, message).
     seen: set[tuple[str, str, str]] = set()
     merged: list[ExtractionWarning] = []
