@@ -59,9 +59,10 @@ function goTo(n) {
   S.step = n;
   // Update step pips
   document.querySelectorAll('.step-pip').forEach((pip, i) => {
-    pip.classList.toggle('done',   i + 1 < n);
-    pip.classList.toggle('active', i + 1 === n);
-    pip.classList.remove(i + 1 < n ? 'active' : '', i + 1 > n ? 'done' : '');
+    const s = i + 1;
+    pip.classList.toggle('done',   s < n);
+    pip.classList.toggle('active', s === n);
+    pip.classList.toggle('future', s > n);
   });
   el('step-name').textContent = STEP_NAMES[n - 1];
   window.scrollTo({ top: 0, behavior: 'smooth' });
