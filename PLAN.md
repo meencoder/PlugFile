@@ -61,24 +61,29 @@ synthetic HTML fixtures, env-var-driven fetcher selection, and a CLI
 debugger for selector calibration. Pyproject bumped to 0.2.0 with
 runtime deps requests/lxml/diskcache.
 
-**Phase 2B (Next — was lower-priority, now elevated).** Print-ready
-W-3 PDF generator. Reads the official `w-3p.pdf` template from
-rrc.texas.gov as overlay base. Maps every Phase 1B `W3Form` field to a
-PDF coordinate. Output: a fillable PDF the operator signs and prints in
-duplicate. Free tier carries a "DRAFT — REVIEW BEFORE FILING"
-watermark; paid tier carries a clean output plus an audit-trail page
-appended to the back. Likely libraries: `pdfrw` for the overlay, `fpdf2`
-or `reportlab` for the audit-trail page. One weekend block (4 hours).
+**Phase 2B (Complete, May 8–11, 2026).** Print-ready W-3 PDF generator
+(`src/plugfile/pdf_export.py`). Overlays every `W3Form` field onto the
+official `w-3p.pdf` template at calibrated coordinates. Free tier
+carries a "DRAFT — REVIEW BEFORE FILING" watermark; paid tier outputs
+a clean PDF plus an inspector-reviewed audit-trail page. CLI:
+`plugfile-pdf`. 238 passing tests at completion.
 
-**Phase 2C (deferred from earlier slot).** GAU-letter parser. Operators
-upload the GAU letter PDF; Plugfile extracts the BUQW depth and any
-special-case requirements automatically. Currently the BUQW depth is
-operator-input only.
+**Phase 2C (Complete, May 2026).** GAU-letter parser
+(`src/plugfile/gau_parser.py`). Operators upload the Texas RRC
+Groundwater Advisory Unit letter PDF; Plugfile extracts the BUQW depth,
+GAU reference number, letter type (GAU-1 standard / GAU-2 special-case),
+and any TAC §3.14(d) special plugging requirements. Supports both
+selectable-text and flags likely scans. CLI: `plugfile-gau`. 27 new
+tests; 5 synthetic letter fixtures covering all known BUQW phrasing
+variants.
 
-**Phase 2D (deferred).** LLM fallback slot extractor for Section IX.
-The current narrative drafter uses regex slot extraction; this would
-add a Claude/Sonnet fallback for slots regex misses, behind a
-feature flag.
+**Phase 2D (Complete, May 16, 2026).** LLM fallback slot extractor for
+Section IX narrative (`src/plugfile/narrative.py`). Claude Haiku (tool
+use, forced via `tool_choice`) fills surface-restoration slots the
+regex layer misses. Feature-flagged: `PLUGFILE_LLM_FALLBACK=true` or
+`use_llm_fallback=True` kwarg. Regex-filled slots are never overwritten;
+provenance marked `llm:<model_id>`. Model overridable via
+`PLUGFILE_LLM_MODEL`. 24 new mocked tests; 289 total passing tests.
 
 **Phase 3 (Conditional, watch RRC announcements).** LoneSTAR W-3
 electronic submitter. Triggered only by an RRC announcement onboarding
@@ -214,6 +219,182 @@ deferred. The current copy mentions W-15 in the Suite tier. Either
 ship Phase 2C alongside Phase 2B (one extra weekend) or remove the W-15
 mention until it ships. Recommendation: remove the W-15 mention now;
 add back as a "shipped" line when 2C is real.
+
+## Testing guide
+
+Plugfile has three layers of testing: automated (289 pytest tests, zero
+network, zero LLM cost), CLI smoke tests (one-shot command per tool),
+and an end-to-end operator simulation.  Run them in this order when
+validating a build.
+
+### Layer 1 — Automated test suite (deterministic, ~3 s)
+
+```
+cd C:\Users\karee\WellPlug\WellPlug
+.venv\Scripts\python.exe -m pytest -q
+```
+
+Expected: `289 passed`.  The suite covers cement math, TAC rule engine,
+W-3 schema validation, RRC fetcher (mocked HTML), PDF overlay geometry,
+GAU letter parsing (5 fixtures, 6 BUQW regex patterns), narrative
+extraction, and LLM fallback (mocked Anthropic client).  No API keys
+required.
+
+### Layer 2 — CLI smoke tests (requires test PDF and venv active)
+
+**plugfile-rrc** — fetch real well data from RRC (needs network):
+```
+.venv\Scripts\plugfile-rrc.exe 42-371-30001
+# Expect: operator name, lease, county, API printed to stdout.
+# On network failure the disk-cache serves the last response.
+```
+
+**plugfile-gau** — parse a GAU letter PDF:
+```
+# Use the fixture text rendered to PDF as a quick smoke test:
+python - <<'EOF'
+from tests.fixtures.gau_letters.letter_texts import GAU1_STANDARD
+from plugfile.gau_parser import parse_gau_text
+r = parse_gau_text(GAU1_STANDARD)
+print(r.buqw_depth_ft, r.gau_letter_reference, r.letter_type)
+EOF
+# Expect: 1500.0  GAU-2024-03-12-Pecos-21874  GAU-1
+```
+Against a real letter PDF:
+```
+.venv\Scripts\plugfile-gau.exe path\to\gau_letter.pdf --json
+```
+
+**plugfile-pdf** — generate a filled W-3 PDF:
+```
+python - <<'EOF'
+from plugfile.lookups import MockFetcher
+from plugfile.prefill import prefill_w3
+from plugfile.pdf_export import export_w3_pdf
+
+form, _ = prefill_w3(
+    "42-371-30001", MockFetcher(),
+    operator_overrides={
+        "operator_signature_name": "Test Operator",
+        "certification_date": "2026-05-16",
+    },
+    plugging_date="2026-05-16",
+)
+pdf = export_w3_pdf(form, paid_tier=False)
+open("test_output_draft.pdf", "wb").write(pdf)
+print("Written test_output_draft.pdf")
+EOF
+# Open test_output_draft.pdf — confirm DRAFT watermark, well data overlaid.
+# Re-run with paid_tier=True for clean version.
+```
+
+### Layer 3 — End-to-end operator simulation
+
+This mirrors the full workflow an operator would take from the
+landing-page deposit through to a print-ready PDF.
+
+**Step 1: Lookup.** Retrieve well data for a known Texas API number.
+```python
+from plugfile.lookups_rrc import RrcFetcher
+from plugfile.prefill import prefill_w3
+
+fetcher = RrcFetcher()   # set RRC_BASE_URL env var or default
+form, warnings = prefill_w3("42-371-30001", fetcher,
+    operator_overrides={"operator_signature_name": "Jane Smith",
+                        "certification_date": "2026-05-16"},
+    plugging_date="2026-05-16")
+assert form.operator_name  # confirm RRC data landed
+```
+
+**Step 2: GAU letter parse → auto-fill BUQW.**
+```python
+from plugfile.gau_parser import parse_gau_pdf
+
+gau_bytes = open("gau_letter.pdf", "rb").read()
+gau = parse_gau_pdf(gau_bytes)
+form, _ = prefill_w3("42-371-30001", fetcher,
+    operator_overrides={**gau.as_lookup_result(),
+                        "operator_signature_name": "Jane Smith",
+                        "certification_date": "2026-05-16"},
+    plugging_date="2026-05-16")
+assert form.buqw_depth_ft == gau.buqw_depth_ft
+```
+
+**Step 3: Voice transcript → Section IX narrative.**
+```python
+from plugfile.narrative import transcript_to_narrative
+
+transcript = (
+    "We cut the casing at three feet below grade and welded a "
+    "24-by-24-by-quarter-inch steel plate over the stub. "
+    "We filled the cellar with caliche. Removed wellhead and pumping unit. "
+    "Re-seeded with native grass, graded and contoured the pad. "
+    "Work completed on May 16, 2026."
+)
+narrative, facts, warnings = transcript_to_narrative(transcript)
+print(narrative)
+# Verify: no [not stated] placeholders, date appears, equipment listed.
+# If any slots missing, repeat with use_llm_fallback=True:
+#   ANTHROPIC_API_KEY=sk-ant-... (set first)
+#   narrative, facts, _ = transcript_to_narrative(transcript, use_llm_fallback=True)
+```
+
+**Step 4: LLM fallback (optional, costs ~$0.001 per call).**
+```
+set ANTHROPIC_API_KEY=sk-ant-...
+set PLUGFILE_LLM_FALLBACK=true
+python -c "
+from plugfile.narrative import transcript_to_narrative
+t = 'Cut casing at 3 ft. Leveled the location.'   # intentionally sparse
+n, f, w = transcript_to_narrative(t, use_llm_fallback=True)
+print(n)
+for slot, prov in f.provenance.items():
+    if prov.startswith('llm:'):
+        print(f'  LLM filled: {slot}')
+"
+```
+
+**Step 5: PDF output visual QA.**
+```python
+from plugfile.pdf_export import export_w3_pdf
+pdf = export_w3_pdf(form, paid_tier=False)
+open("qa_draft.pdf", "wb").write(pdf)
+```
+Open `qa_draft.pdf` and verify against this checklist:
+- [ ] Operator name, API, lease/well number, county correct in header
+- [ ] Plugging date in Section I
+- [ ] BUQW depth in Section VIII (if set)
+- [ ] GAU reference number present
+- [ ] Section IX narrative readable and complete
+- [ ] Cement volume totals match hand-calculation for a simple casing
+- [ ] "DRAFT — REVIEW BEFORE FILING" watermark visible (free tier)
+- [ ] No fields overflowing or clipped
+
+Re-run with `paid_tier=True` and verify watermark is absent.
+
+### Layer 4 — Live / external checks (do before each release)
+
+| Check | Command / URL | Pass criterion |
+|---|---|---|
+| RRC live lookup | `plugfile-rrc 42-371-30001` | Returns operator name, no error |
+| Landing page | https://plugfile.com | Loads, no console errors, Stripe Reserve button works |
+| Stripe deposit link | Click Reserve on plugfile.com | Redirects to Stripe checkout, amount $1.00 |
+| Legacy redirects | https://kaproq.com | 301 → plugfile.com |
+| GitHub public | https://github.com/meencoder/PlugFile | Repo accessible, latest commit visible |
+
+### Layer 5 — Regression after any PLAN change
+
+Whenever you modify `tac_3_14.py`, `cement_volume.py`, `pdf_export.py`,
+`gau_parser.py`, or `narrative.py`:
+
+```
+.venv\Scripts\python.exe -m pytest -x -q   # fail-fast
+```
+
+If tests pass, diff the generated PDF visually against the last
+approved baseline PDF before pushing.
+
+---
 
 ## How to read this document later
 
