@@ -82,9 +82,9 @@ class GauParseResult:
 # Regex patterns  (compiled once at import time)
 # ---------------------------------------------------------------------------
 
-# BUQW depth — primary patterns in expected text order
+# BUQW depth — patterns cover synthetic letters + real RRC Form GW-2 language
 _BUQW_PATTERNS: list[re.Pattern] = [
-    # "base of usable quality water ... 1,500 feet" (full phrase)
+    # "base of usable quality water ... 1,500 feet" (full phrase, hyphen or space)
     re.compile(
         r"base\s+of\s+usable[\s-]quality\s+water[^.]{0,120}?"
         r"(\d{1,2},\d{3}|\d{2,5})\s*(?:feet|ft)\b",
@@ -93,6 +93,11 @@ _BUQW_PATTERNS: list[re.Pattern] = [
     # "BUQW depth: 1500 feet" or "BUQW: 1,500'"
     re.compile(
         r"BUQW\s*(?:depth)?[:\s]+(\d{1,2},\d{3}|\d{2,5})\s*(?:feet|ft|')",
+        re.IGNORECASE,
+    ),
+    # Real Form GW-2: "estimated to occur at a depth of 1550 feet below the land surface"
+    re.compile(
+        r"estimated\s+to\s+occur\s+at\s+a\s+depth\s+of\s+(\d{1,2},\d{3}|\d{2,5})\s*(?:feet|ft)\b",
         re.IGNORECASE,
     ),
     # "depth of 1,500 feet" in proximity to "usable" or "groundwater"
@@ -111,17 +116,21 @@ _BUQW_PATTERNS: list[re.Pattern] = [
         r"BUQW[^:\n]{0,40}:\s*(\d{1,2},\d{3}|\d{2,5})\s*(?:feet|ft)\b",
         re.IGNORECASE,
     ),
-    # Fallback: first 4-digit number followed by feet near "water"
+    # Fallback: 3-5 digit number + feet near "water" or "surface"
     re.compile(
         r"(\d{1,2},\d{3}|\d{3,5})\s*(?:feet|ft)\b[^.]{0,80}?"
-        r"(?:water|groundwater|usable)",
+        r"(?:water|groundwater|usable|land\s+surface)",
         re.IGNORECASE | re.DOTALL,
     ),
 ]
 
-# GAU letter reference number — e.g. "GAU-2024-03-12-Pecos-21874"
+# GAU letter reference number.
+# Supports three real RRC formats:
+#   "GAU-2024-03-12-Pecos-21874"   (advisory letter, date+county+seq)
+#   "GAU Number: 208803"            (Form GW-2 Groundwater Protection Determination)
+#   "GAU 2024-03-12"                (older date-only format)
 _REF_PATTERNS: list[re.Pattern] = [
-    # Explicit "Reference:" / "Letter No." label
+    # Explicit "Reference:" / "Letter No." label before full date-county ref
     re.compile(
         r"(?:reference|letter\s+no\.?|ref\.?)\s*[:\s]+"
         r"(GAU[-\s]\d{4}[-\s]\d{2}[-\s]\d{2}[-\s]\w+[-\s]\d+)",
@@ -137,16 +146,30 @@ _REF_PATTERNS: list[re.Pattern] = [
         r"\b(GAU[-\s]\d{4}[-\s]\d{2}[-\s]\d{2})\b",
         re.IGNORECASE,
     ),
+    # Real Form GW-2: "GAU Number: 208803"
+    re.compile(
+        r"GAU\s+Number[:\s]+(\d{4,7})\b",
+        re.IGNORECASE,
+    ),
 ]
 
 # API number in text
 _API_PATTERN = re.compile(r"\b(42-\d{3}-\d{5})\b")
 
-# Date: Month D, YYYY  or  MM/DD/YYYY
+_MONTHS_ABBR = (
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december",
+)
+_MONTH_RE = "|".join(_MONTHS_ABBR)
+
+# Date — three formats:
+#   "March 12, 2024"    (month-first, comma)
+#   "25 September 2018" (day-first, Form GW-2)
+#   "MM/DD/YYYY"
 _DATE_PATTERN = re.compile(
-    r"(?:January|February|March|April|May|June|July|August|September|"
-    r"October|November|December)\s+\d{1,2},\s+\d{4}"
-    r"|\d{1,2}/\d{1,2}/\d{4}",
+    r"(?:" + _MONTH_RE + r")\s+\d{1,2},?\s+\d{4}"   # month-first
+    r"|\d{1,2}\s+(?:" + _MONTH_RE + r")\s+\d{4}"     # day-first (Form GW-2)
+    r"|\d{1,2}/\d{1,2}/\d{4}",                        # MM/DD/YYYY
     re.IGNORECASE,
 )
 
@@ -164,11 +187,26 @@ _SPECIAL_CASE_PHRASES = [
      "TAC §3.14(d) special-case rule applies"),
 ]
 
-# County name extraction near "County" keyword
-_COUNTY_PATTERN = re.compile(r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+County", re.IGNORECASE)
+# County — two layouts:
+#   "Pecos County"    (name before keyword — standard letters)
+#   "County: POLK"    (keyword before name — Form GW-2)
+#
+# The label-first alternative captures only one word so that it does not
+# consume multi-word values like "Pecos County" (→ "Pecos") or bleed across
+# a newline into an address line (→ "POLK\n   HOUSTON").  The name-first
+# alternative uses [ \t]+ (horizontal whitespace only) in the optional word
+# separator to prevent newline-crossing as well.
+_COUNTY_PATTERN = re.compile(
+    r"([A-Z][a-zA-Z]+(?:[ \t]+[A-Z][a-zA-Z]+)?)\s+County"   # name-first
+    r"|County[ \t]*[:\s]+([A-Z][A-Za-z]+)",                   # label-first (one word)
+    re.IGNORECASE,
+)
 
-# Operator name — "Operator:" label
-_OPERATOR_PATTERN = re.compile(r"Operator\s*[:\s]+([^\n,]{3,60})", re.IGNORECASE)
+# Operator — "Operator:" label or "Attention:" (Form GW-2 addressee line)
+_OPERATOR_PATTERN = re.compile(
+    r"(?:Operator|Attention)\s*[:\s]+([^\n,\d]{3,60})",
+    re.IGNORECASE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -219,8 +257,11 @@ def parse_gau_text(text: str) -> GauParseResult:
         m = pat.search(text)
         if m:
             gau_ref = m.group(1).strip()
-            # Normalize spaces to hyphens in reference
+            # Normalize spaces to hyphens
             gau_ref = re.sub(r"\s+", "-", gau_ref)
+            # Form GW-2: bare numeric ID → prefix with "GAU-"
+            if re.match(r"^\d+$", gau_ref):
+                gau_ref = f"GAU-{gau_ref}"
             break
 
     if gau_ref is None:
@@ -237,7 +278,11 @@ def parse_gau_text(text: str) -> GauParseResult:
     letter_date = date_match.group(0) if date_match else None
 
     county_match = _COUNTY_PATTERN.search(text)
-    county = county_match.group(1) if county_match else None
+    if county_match:
+        # group(1) = name-first layout; group(2) = label-first (Form GW-2)
+        county = (county_match.group(1) or county_match.group(2) or "").strip()
+    else:
+        county = None
 
     op_match = _OPERATOR_PATTERN.search(text)
     operator_name = op_match.group(1).strip() if op_match else None
@@ -246,13 +291,19 @@ def parse_gau_text(text: str) -> GauParseResult:
     if gau_ref is None:
         parts = ["GAU"]
         if letter_date:
-            # Try to convert "March 12, 2024" -> "2024-03-12"
-            try:
-                import datetime
-                dt = datetime.datetime.strptime(letter_date, "%B %d, %Y")
-                parts.append(dt.strftime("%Y-%m-%d"))
-            except ValueError:
-                parts.append(letter_date.replace("/", "-"))
+            # Try multiple date formats: "March 12, 2024", "March 12 2024",
+            # "25 September 2018" (Form GW-2 day-first), "MM/DD/YYYY"
+            import datetime
+            _date_fmts = ("%B %d, %Y", "%B %d %Y", "%d %B %Y", "%m/%d/%Y")
+            for _fmt in _date_fmts:
+                try:
+                    dt = datetime.datetime.strptime(letter_date, _fmt)
+                    parts.append(dt.strftime("%Y-%m-%d"))
+                    break
+                except ValueError:
+                    continue
+            else:
+                parts.append(letter_date.replace("/", "-").replace(" ", "-"))
         if county:
             parts.append(county)
         if api_number:
@@ -280,6 +331,83 @@ def parse_gau_text(text: str) -> GauParseResult:
         warnings=warnings,
         raw_text=text,
     )
+
+
+def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
+    """Send a scanned GAU letter PDF to Claude for OCR transcription.
+
+    Used as a fallback when pypdf text extraction yields < 100 characters
+    (i.e. the letter is a scanned image rather than a selectable-text PDF).
+
+    Requires ``ANTHROPIC_API_KEY`` to be set.  If absent, raises
+    ``GauParseError`` with a user-friendly message directing the operator
+    to enter the BUQW depth manually.
+
+    The function sends the raw PDF bytes as a base64-encoded document to
+    ``claude-3-5-haiku-20241022`` (or the model in ``PLUGFILE_LLM_MODEL``),
+    asking it to transcribe all visible text.  The returned text is then
+    parsed by the normal ``parse_gau_text`` regex pipeline.
+    """
+    import base64
+    import os
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not api_key:
+        raise GauParseError(
+            "This GAU letter is a scanned image — pypdf extracted 0 characters. "
+            "Set ANTHROPIC_API_KEY to enable automatic OCR, or enter the BUQW "
+            "depth manually in the app."
+        )
+
+    try:
+        import anthropic as _ant
+    except ImportError as exc:
+        raise GauParseError(
+            "anthropic package required for OCR of scanned GAU letters. "
+            "pip install anthropic — or enter BUQW depth manually."
+        ) from exc
+
+    model = os.environ.get("PLUGFILE_LLM_MODEL", "claude-3-5-haiku-20241022")
+    pdf_b64 = base64.standard_b64encode(pdf_bytes).decode()
+
+    client = _ant.Anthropic()
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=1500,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "document",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "application/pdf",
+                            "data": pdf_b64,
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            "This is a Texas Railroad Commission Groundwater Advisory Unit "
+                            "letter (Form GW-2 or similar RRC groundwater determination). "
+                            "Transcribe ALL visible text exactly as it appears — every field "
+                            "label and its value on the same line. "
+                            "Include: GAU Number, Date Issued, County, API Number, Operator, "
+                            "Lease Name, Well Number, and the full body paragraph(s) describing "
+                            "the base of usable-quality water depth. "
+                            "Do not summarize. Transcribe only."
+                        ),
+                    },
+                ],
+            }],
+        )
+    except Exception as exc:
+        raise GauParseError(
+            f"Claude OCR call failed ({exc}). Enter BUQW depth manually."
+        ) from exc
+
+    return response.content[0].text
 
 
 def parse_gau_pdf(pdf_bytes: bytes) -> GauParseResult:
@@ -316,16 +444,17 @@ def parse_gau_pdf(pdf_bytes: bytes) -> GauParseResult:
 
     full_text = "\n".join(pages_text)
 
+    ocr_used = False
     if len(full_text.strip()) < 100:
-        raise GauParseError(
-            f"PDF text extraction yielded only {len(full_text.strip())} characters — "
-            "the letter is likely a scanned image. "
-            "Enter BUQW depth manually via operator_overrides, or use an OCR tool "
-            "to convert the scan to searchable PDF first."
-        )
+        # Scanned image — try Claude vision OCR before giving up.
+        # _ocr_pdf_with_claude raises GauParseError if ANTHROPIC_API_KEY not set.
+        full_text = _ocr_pdf_with_claude(pdf_bytes)
+        ocr_used = True
 
     result = parse_gau_text(full_text)
     result.raw_text = full_text
+    if ocr_used:
+        result.warnings.insert(0, "Text extracted via Claude OCR (scanned PDF). Verify depth before filing.")
     return result
 
 

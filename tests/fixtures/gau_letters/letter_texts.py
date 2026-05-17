@@ -225,6 +225,51 @@ the surface.  General plugging requirements apply.
 
 
 # ---------------------------------------------------------------------------
+# Real RRC Form GW-2 "Groundwater Protection Determination" format
+# (as issued by the GAU since at least 2014 — structured form, not a prose letter)
+# This format differs from the synthetic letters above in three key ways:
+#   1. Reference is "GAU Number: NNNNNN" (bare 6-digit integer)
+#   2. Date is "DD Month YYYY" (day-first, e.g. "25 September 2018")
+#   3. County is "County: POLK" (label before value)
+#   4. BUQW phrasing: "estimated to occur at a depth of NNNN feet below the land surface"
+# ---------------------------------------------------------------------------
+GAU_GW2_FORMAT = """\
+GROUNDWATER PROTECTION DETERMINATION                      Form GW-2
+Groundwater Advisory Unit
+
+Date Issued:  25 September 2018       GAU Number:  208803
+
+Attention:    DAVIS SOUTHERN          API Number:
+              1221 MCKINNEY STE 3100  County:      POLK
+              HOUSTON, TX 77010       Lease Name:  BSM Wildman
+Operator No.: 206081                  Lease Number:
+                                      Well Number: 1
+                                      Total Vertical Depth: 6000
+                                      Latitude: 30.565281
+                                      Longitude: -94.660533
+                                      Datum: NAD27
+
+Purpose:      New Production Well
+Location:     Survey-THOMAS, M.; Abstract-75
+
+To protect usable-quality groundwater at this location, the Groundwater
+Advisory Unit of the Railroad Commission of Texas recommends:
+
+The base of usable-quality water that must be protected is estimated to
+occur at a depth of 1550 feet below the land surface.  Moreover, the
+interval from the land surface to a depth of 450 feet and the fresh water
+contained in the Jasper from a depth of 800 feet to 1150 feet must be
+isolated from water in overlying and underlying beds.
+
+This recommendation is applicable to all wells within a radius of 600 feet
+of this location.
+
+Groundwater Advisory Unit, Oil and Gas Division
+Form GW-2 Rev. 02/2014  P.O. Box 12967 Austin, Texas 78771-2967  512-463-2741
+"""
+
+
+# ---------------------------------------------------------------------------
 # Convenience mapping: api_number -> letter text
 # ---------------------------------------------------------------------------
 LETTER_BY_API: dict[str, str] = {
@@ -233,6 +278,8 @@ LETTER_BY_API: dict[str, str] = {
     "42-103-77001": GAU1_COMMA_DEPTH,
     "42-461-00042": GAU1_EXPLICIT_FIELD,
     "42-329-55555": GAU2_TAC_CITATION,
+    # Real Form GW-2 format (Polk County / BSM Wildman; no API# in letter)
+    "00-397-00001": GAU_GW2_FORMAT,
 }
 
 EXPECTED_BUQW_BY_API: dict[str, float] = {
@@ -241,6 +288,7 @@ EXPECTED_BUQW_BY_API: dict[str, float] = {
     "42-103-77001": 1200.0,
     "42-461-00042": 600.0,
     "42-329-55555": 1200.0,
+    "00-397-00001": 1550.0,
 }
 
 EXPECTED_REF_BY_API: dict[str, str] = {
@@ -249,4 +297,5 @@ EXPECTED_REF_BY_API: dict[str, str] = {
     "42-103-77001": "GAU-2024-05-19-Crane-08812",
     "42-461-00042": "GAU-2024-09-22-Throck-00301",
     "42-329-55555": "GAU-2024-02-28-Midland-44218",
+    "00-397-00001": "GAU-208803",
 }

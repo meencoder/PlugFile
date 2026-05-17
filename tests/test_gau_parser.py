@@ -31,6 +31,7 @@ from tests.fixtures.gau_letters.letter_texts import (
     GAU1_EXPLICIT_FIELD,
     GAU2_UNCOVERED,
     GAU2_TAC_CITATION,
+    GAU_GW2_FORMAT,
     GAU_SCAN_STUB,
     GAU_WEIRD_DEPTH,
     LETTER_BY_API,
@@ -259,3 +260,54 @@ def test_gau_parse_result_flows_into_prefill():
     )
     assert form.buqw_depth_ft == 1500.0
     assert form.gau_letter_reference == "GAU-2024-03-12-Pecos-21874"
+
+
+# ---------------------------------------------------------------------------
+# Real Form GW-2 "Groundwater Protection Determination" format
+# ---------------------------------------------------------------------------
+
+def test_gw2_buqw_depth():
+    """GW-2: 'estimated to occur at a depth of 1550 feet' → 1550.0 ft."""
+    result = parse_gau_text(GAU_GW2_FORMAT)
+    assert result.buqw_depth_ft == 1550.0
+
+
+def test_gw2_reference_bare_numeric_prefixed():
+    """GW-2: 'GAU Number: 208803' → 'GAU-208803' (bare int gets prefix)."""
+    result = parse_gau_text(GAU_GW2_FORMAT)
+    assert result.gau_letter_reference == "GAU-208803"
+
+
+def test_gw2_day_first_date_extracted():
+    """GW-2: 'Date Issued: 25 September 2018' → letter_date contains '2018'."""
+    result = parse_gau_text(GAU_GW2_FORMAT)
+    assert result.letter_date is not None
+    assert "2018" in result.letter_date
+
+
+def test_gw2_county_label_first():
+    """GW-2: 'County: POLK' layout → county == 'POLK'."""
+    result = parse_gau_text(GAU_GW2_FORMAT)
+    assert result.county is not None
+    assert result.county.upper() == "POLK"
+
+
+def test_gw2_letter_type_is_gau1():
+    """GW-2 standard determination (no special-case language) → letter_type 'GAU-1'."""
+    result = parse_gau_text(GAU_GW2_FORMAT)
+    assert result.letter_type == "GAU-1"
+    assert result.special_requirements == []
+
+
+def test_gw2_no_depth_range_warning():
+    """GW-2: 1550 ft is within the valid range — no out-of-range warning."""
+    result = parse_gau_text(GAU_GW2_FORMAT)
+    assert not any("range" in w.lower() for w in result.warnings)
+
+
+def test_gw2_pdf_round_trip():
+    """GW-2 fixture embedded in a reportlab PDF parses correctly end-to-end."""
+    pdf_bytes = _make_pdf(GAU_GW2_FORMAT)
+    result = parse_gau_pdf(pdf_bytes)
+    assert result.buqw_depth_ft == 1550.0
+    assert result.gau_letter_reference == "GAU-208803"
