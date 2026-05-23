@@ -40,8 +40,53 @@
 
     <div id="well-result" class="result-card hidden"></div>
 
+    <!-- Optional Area-of-Review helper -->
+    <div id="aor-panel" class="aor-panel hidden">
+      <button id="btn-aor-toggle" class="btn-ghost" type="button">
+        🛢️ Area-of-Review check <span class="muted-inline">(optional)</span>
+      </button>
+
+      <div id="aor-body" class="hidden">
+        <p class="hint">
+          The RRC GIS Viewer is an external map — Plugfile can't query it
+          directly. Follow the steps, then add any wells of concern you find
+          within ½ mile. Plugfile computes the isolation plug each one needs.
+        </p>
+
+        <div id="aor-guidance" class="checklist"></div>
+
+        <hr class="divider">
+
+        <h3 class="aor-h3">Add a nearby well of concern</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="aor-well-id">Well ID / API</label>
+            <input id="aor-well-id" type="text" placeholder="42-XXX-XXXXX">
+          </div>
+          <div class="field">
+            <label for="aor-zone">Zone</label>
+            <input id="aor-zone" type="text" placeholder="e.g. San Andres">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="aor-depth">Zone depth (ft)</label>
+            <input id="aor-depth" type="number" inputmode="decimal" placeholder="e.g. 4200">
+          </div>
+          <div class="field">
+            <label for="aor-distance">Distance (mi)</label>
+            <input id="aor-distance" type="number" inputmode="decimal" placeholder="e.g. 0.3">
+          </div>
+        </div>
+        <button id="btn-aor-add" class="btn-ghost" type="button">+ Add finding</button>
+
+        <div id="aor-results" class="hidden"></div>
+      </div>
+    </div>
+
     <button id="btn-lookup" class="btn-primary">Look up well →</button>
     <button id="btn-skip-lookup" class="btn-ghost">Continue without lookup</button>
+    <button id="btn-well-continue" class="btn-primary hidden">Continue to GAU letter →</button>
   </section>
 
   <!-- ============================================== Step 2: GAU letter -->
@@ -56,6 +101,7 @@
     </label>
 
     <div id="gau-result" class="result-card hidden"></div>
+    <div id="gau-verdict" class="verdict hidden"></div>
 
     <div id="manual-buqw-group" class="hidden">
       <hr class="divider">

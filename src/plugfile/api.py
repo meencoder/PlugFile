@@ -23,13 +23,14 @@ import os
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from plugfile.aor import assess_aor
 from plugfile.attachments import check_attachments
+from plugfile.gau_check import check_gau_acceptability
 from plugfile.gau_parser import GauParseError, parse_gau_pdf, _load_dotenv
 from plugfile.lookups import MockFetcher
 from plugfile.narrative import transcript_to_narrative
@@ -172,8 +173,17 @@ def lookup(req: LookupRequest):
 
 
 @app.post("/api/gau")
-async def gau_parse(file: UploadFile = File(...)):
-    """Parse a GAU letter PDF and extract BUQW depth + reference number."""
+async def gau_parse(
+    file: UploadFile = File(...),
+    api_number: Optional[str] = Form(None),
+):
+    """Parse a GAU letter PDF and extract BUQW depth + reference number.
+
+    Also runs the GW-2 / H-15 "acceptable for plugging" check and returns
+    the verdict under ``acceptability``. Pass the ``api_number`` of the well
+    being plugged (optional) to cross-check it against the API on the letter
+    and catch a letter uploaded for the wrong well.
+    """
     if not (file.filename or "").lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Uploaded file must be a PDF.")
     pdf_bytes = await file.read()
@@ -181,12 +191,18 @@ async def gau_parse(file: UploadFile = File(...)):
         r = parse_gau_pdf(pdf_bytes)
     except GauParseError as e:
         raise HTTPException(status_code=422, detail=str(e))
+
+    acceptability = check_gau_acceptability(
+        r, expected_api=(api_number or None)
+    ).to_dict()
+
     return {
         "buqw_depth_ft": r.buqw_depth_ft,
         "gau_letter_reference": r.gau_letter_reference,
         "letter_type": r.letter_type,
         "special_requirements": r.special_requirements,
         "warnings": r.warnings,
+        "acceptability": acceptability,
     }
 
 

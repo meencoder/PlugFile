@@ -15,7 +15,12 @@ const S = {
   warnings: [],
   pdfUrl: null,
   pdfFilename: '',
+  aorFindings: [],
+  aorGuidanceLoaded: false,
 };
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---------------------------------------------------------------------------
 // DOM helpers
@@ -151,7 +156,12 @@ el('btn-lookup').addEventListener('click', async () => {
       </div>`;
     show(el('well-result'));
 
-    setTimeout(() => goTo(2), 700);
+    // Reveal the optional AOR helper + an explicit continue button instead of
+    // auto-advancing, so the operator can run the area-of-review check first.
+    show(el('aor-panel'));
+    hide(el('btn-lookup'));
+    hide(el('btn-skip-lookup'));
+    show(el('btn-well-continue'));
   } catch (e) {
     toast(`Lookup failed: ${e.message}. Continue manually.`);
     S.apiNumber = api;
@@ -166,6 +176,108 @@ el('btn-skip-lookup').addEventListener('click', () => {
   goTo(2);
 });
 
+el('btn-well-continue').addEventListener('click', () => goTo(2));
+
+// ---------------------------------------------------------------------------
+// Step 1 — Area-of-Review helper (optional)
+// ---------------------------------------------------------------------------
+el('btn-aor-toggle').addEventListener('click', () => {
+  const body = el('aor-body');
+  body.classList.toggle('hidden');
+  if (!body.classList.contains('hidden') && !S.aorGuidanceLoaded) {
+    loadAor();   // first open → fetch the GIS-Viewer checklist
+  }
+});
+
+el('btn-aor-add').addEventListener('click', () => {
+  const wellId   = el('aor-well-id').value.trim();
+  const zone     = el('aor-zone').value.trim();
+  const depth    = el('aor-depth').value;
+  const distance = el('aor-distance').value;
+
+  if (!wellId && !zone) { toast('Enter at least a well ID or zone.'); return; }
+
+  S.aorFindings.push({
+    well_id:     wellId || null,
+    zone_name:   zone || null,
+    depth_ft:    depth    !== '' ? parseFloat(depth)    : null,
+    distance_mi: distance !== '' ? parseFloat(distance) : null,
+  });
+
+  // Clear inputs for the next entry.
+  el('aor-well-id').value = '';
+  el('aor-zone').value    = '';
+  el('aor-depth').value   = '';
+  el('aor-distance').value = '';
+
+  loadAor();
+});
+
+async function loadAor() {
+  const api = S.apiNumber || el('api-number').value.trim();
+  if (!api) { toast('Look up a well first.'); return; }
+
+  try {
+    const res = await apiFetch('/api/aor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_number: api,
+        overrides: S.aorFindings.length ? { aor_findings: S.aorFindings } : null,
+      }),
+    });
+    const a = await res.json();
+    S.aorGuidanceLoaded = true;
+    renderAorGuidance(a.review_guidance || []);
+    renderAorResults(a);
+  } catch (e) {
+    toast(`AOR check failed: ${e.message}`);
+  }
+}
+
+function renderAorGuidance(steps) {
+  if (!steps.length) return;
+  el('aor-guidance').innerHTML =
+    `<h3>RRC GIS-Viewer review steps</h3><ul>` +
+    steps.map(s => `<li><strong>${s.order}. ${esc(s.title)}</strong><br>
+      <span class="muted-inline">${esc(s.detail)}</span></li>`).join('') +
+    `</ul>`;
+}
+
+function renderAorResults(a) {
+  const box = el('aor-results');
+  if (!a.findings || !a.findings.length) {
+    hide(box);
+    return;
+  }
+  const summary = `<div class="aor-summary">
+    ${a.finding_count} finding(s) · ${a.in_aor_count} within ${a.radius_mi} mi ·
+    ${a.isolation_required_count} need isolation${
+      a.total_isolation_sacks ? ` · ~${a.total_isolation_sacks} sx total` : ''}
+  </div>`;
+
+  const rows = a.findings.map(f => {
+    const cls = f.requires_isolation ? 'iso' : (f.in_aor ? 'inradius' : 'outside');
+    const tag = f.requires_isolation ? '⚠ isolation plug'
+              : (f.in_aor ? 'in radius' : 'outside ½ mi');
+    const plug = f.requires_isolation
+      ? `<div class="aor-plug">Plug ${Math.round(f.isolation_top_ft)}–${Math.round(f.isolation_bottom_ft)} ft
+         · ~${f.isolation_volume_sacks} sx · ${esc(f.cite || '')}</div>`
+      : '';
+    return `<div class="aor-finding ${cls}">
+      <div class="aor-finding-head">
+        <span>${esc(f.well_id || f.zone_name || 'finding')}</span>
+        <span class="aor-tag">${tag}</span>
+      </div>
+      <div class="aor-note">${esc(f.note)}</div>
+      ${plug}
+    </div>`;
+  }).join('');
+
+  box.innerHTML = summary + rows;
+  show(box);
+}
+
 // ---------------------------------------------------------------------------
 // Step 2 — GAU letter
 // ---------------------------------------------------------------------------
@@ -178,6 +290,8 @@ el('gau-file').addEventListener('change', async e => {
 
   const form = new FormData();
   form.append('file', file);
+  // Pass the well's API so the GW-2/H-15 check can catch a wrong-well letter.
+  if (S.apiNumber) form.append('api_number', S.apiNumber);
 
   try {
     const res = await apiFetch('/api/gau', { method: 'POST', body: form });
@@ -186,7 +300,7 @@ el('gau-file').addEventListener('change', async e => {
     S.gauRef    = data.gau_letter_reference;
 
     const specials = data.special_requirements.length
-      ? `<div class="result-row sp"><span class="rlabel">⚠ Special</span><span>${data.special_requirements.join('; ')}</span></div>`
+      ? `<div class="result-row sp"><span class="rlabel">⚠ Special</span><span>${esc(data.special_requirements.join('; '))}</span></div>`
       : '';
 
     el('gau-result').innerHTML = `
@@ -196,22 +310,53 @@ el('gau-file').addEventListener('change', async e => {
       </div>
       <div class="result-row">
         <span class="rlabel">Reference</span>
-        <span>${data.gau_letter_reference}</span>
+        <span>${esc(data.gau_letter_reference)}</span>
       </div>
       <div class="result-row">
         <span class="rlabel">Type</span>
-        <span>${data.letter_type}</span>
+        <span>${esc(data.letter_type)}</span>
       </div>
       ${specials}`;
     show(el('gau-result'));
+    renderGauVerdict(data.acceptability);
     lbl.textContent = file.name + ' ✓';
     el('btn-step2-next').disabled = false;
   } catch (err) {
     toast(`Could not parse GAU letter: ${err.message}`);
     lbl.textContent = 'Tap to upload GAU letter PDF';
+    hide(el('gau-verdict'));
     showManualBuqw();
   }
 });
+
+// GW-2 / H-15 "acceptable for plugging" verdict banner.
+function renderGauVerdict(v) {
+  const box = el('gau-verdict');
+  if (!v) { hide(box); return; }
+
+  const ok = v.acceptable_for_plugging;
+  box.className = 'verdict ' + (ok ? (v.confidence === 'low' ? 'warn' : 'pass') : 'fail');
+
+  const headline = ok
+    ? (v.confidence === 'low'
+        ? '⚠ Likely OK — verify it is the plugging determination'
+        : '✓ Acceptable for plugging')
+    : '✕ This letter looks wrong for plugging';
+
+  const blocking = (v.blocking_issues || []).length
+    ? `<ul class="verdict-list fail">${v.blocking_issues.map(b => `<li>${esc(b)}</li>`).join('')}</ul>`
+    : '';
+  const warns = (v.warnings || []).length
+    ? `<ul class="verdict-list warn">${v.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>`
+    : '';
+
+  box.innerHTML = `
+    <div class="verdict-head">${headline}
+      <span class="verdict-conf">${esc(v.confidence)} confidence</span>
+    </div>
+    ${blocking}${warns}`;
+  show(box);
+}
 
 function showManualBuqw() {
   show(el('manual-buqw-group'));
@@ -388,14 +533,25 @@ el('btn-restart').addEventListener('click', () => {
     step: 1, apiNumber: '', wellData: null,
     buqwDepth: null, gauRef: null, transcript: '',
     narrative: '', slots: {}, warnings: [], pdfUrl: null,
+    aorFindings: [], aorGuidanceLoaded: false,
   });
   el('api-number').value = '';
   el('transcript').value = '';
   el('gau-upload-label').textContent = 'Tap to upload GAU letter PDF';
   hide(el('well-result'));
   hide(el('gau-result'));
+  hide(el('gau-verdict'));
   hide(el('manual-buqw-group'));
   hide(el('warn-box'));
+  // Reset AOR helper + step-1 buttons.
+  hide(el('aor-panel'));
+  hide(el('aor-body'));
+  hide(el('aor-results'));
+  el('aor-guidance').innerHTML = '';
+  el('aor-results').innerHTML = '';
+  show(el('btn-lookup'));
+  show(el('btn-skip-lookup'));
+  hide(el('btn-well-continue'));
   el('btn-step2-next').disabled = true;
   finalText = '';
   goTo(1);
