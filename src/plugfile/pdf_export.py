@@ -606,6 +606,15 @@ W3A_WELL_TYPE_NO: dict[str, str] = {
     "oil": "1", "gas": "2", "disposal": "3", "injection": "4", "other": "5",
 }
 
+# Box 13 "Enter appropriate no. in box" square (well-type number goes here) and
+# Box 14 "Type of completion" Single/Multiple checkboxes. Centres detected from
+# the blank template; values are drawn as a centred digit / "X" tick, not text.
+W3A_WELL_TYPE_BOX: tuple[float, float] = (305.8, 487.5)
+W3A_COMPLETION_BOX: dict[str, tuple[float, float]] = {
+    "single":   (373.0, 487.5),
+    "multiple": (449.0, 487.5),
+}
+
 W3A_COORDS: dict[str, FieldCoord] = {
     # Box 1/2/3/4 — operator + district/county (top block)
     "operator_name":            FieldCoord(0, 48.0, 660.0, 300.0, 9.0),
@@ -626,9 +635,9 @@ W3A_COORDS: dict[str, FieldCoord] = {
     "section_block_survey":     FieldCoord(0, 70.0, 526.0, 380.0, 7.0),
     "abstract_no":              FieldCoord(0, 470.0, 535.0, 80.0, 8.0),
     "location_description":     FieldCoord(0, 360.0, 519.0, 230.0, 7.0),
-    # Box 13/14/15 — type + depth
-    "well_type":                FieldCoord(0, 155.0, 493.0, 40.0, 9.0),
-    "completion_type":          FieldCoord(0, 458.0, 490.0, 60.0, 8.0),
+    # Box 13/14/15 — type + depth. well_type (Box 13 number) and
+    # completion_type (Box 14 Single/Multiple tick) are drawn specially by
+    # _draw_w3a_type_boxes(), not as free text, so they are not listed here.
     "total_depth_ft":           FieldCoord(0, 480.0, 495.0, 90.0, 9.0),
     # Box 16 — BUQW / GAU. The form has no dedicated GAU-reference field, so the
     # letter reference + date go in the empty right half of Box 16's first
@@ -713,6 +722,9 @@ def render_w3a_calibration_overlay(template_path: Path | None = None) -> bytes:
     for r, y in enumerate(W3A_PROPOSAL_ROW_Y):
         _crosshair(c, W3A_PROPOSAL_SACKS_X, y, f"prop{r+1}.sacks")
         _crosshair(c, W3A_PROPOSAL_DEPTH_X, y, f"prop{r+1}.depth")
+    _crosshair(c, *W3A_WELL_TYPE_BOX, "well_type.box")
+    for k, pos in W3A_COMPLETION_BOX.items():
+        _crosshair(c, pos[0], pos[1], f"completion.{k}")
     c.showPage()
     c.save()
     overlay = PdfReader(BytesIO(buf.getvalue()))
@@ -735,10 +747,9 @@ def _build_w3a_overlay(form: W3AForm, *, tier: Tier) -> bytes:
             continue
         if name == "api_number" and isinstance(v, str) and v.upper().startswith("42-"):
             v = v[3:]  # state-code prefix is pre-printed
-        if name == "well_type":
-            v = W3A_WELL_TYPE_NO.get(str(v).lower(), str(v))
         _draw_value(c, coord, v)
 
+    _draw_w3a_type_boxes(c, form)
     _draw_w3a_casing(c, form)
     _draw_w3a_proposal(c, form)
 
@@ -747,6 +758,25 @@ def _build_w3a_overlay(form: W3AForm, *, tier: Tier) -> bytes:
     c.showPage()
     c.save()
     return buf.getvalue()
+
+
+def _draw_w3a_type_boxes(c: "canvas.Canvas", form: W3AForm) -> None:
+    """Box 13 (well type → number in the entry box) and Box 14 (completion
+    type → X in the Single/Multiple checkbox). Both are checkbox-style fields,
+    not free text, so they're rendered as a centred digit / tick mark."""
+    wt = getattr(form, "well_type", None)
+    if wt:
+        num = W3A_WELL_TYPE_NO.get(str(wt).lower())
+        if num:
+            c.setFont("Helvetica", 9)
+            c.drawCentredString(W3A_WELL_TYPE_BOX[0], W3A_WELL_TYPE_BOX[1], num)
+
+    ct = getattr(form, "completion_type", None)
+    if ct:
+        pos = W3A_COMPLETION_BOX.get(str(ct).lower())
+        if pos:
+            c.setFont("Helvetica-Bold", 9)
+            c.drawCentredString(pos[0], pos[1], "X")
 
 
 def _draw_w3a_casing(c: "canvas.Canvas", form: W3AForm) -> None:

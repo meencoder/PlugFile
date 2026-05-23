@@ -14,7 +14,7 @@ const S = {
   aorFindings: [],
   aorGuidanceLoaded: false,
   wellType: 'oil',
-  completionType: 'vertical',
+  completionType: 'single',
   cementingCompany: null,
   plugsComputed: false,
   attach: { gau: false, w15: false, l1: false, p13: false },
@@ -463,7 +463,7 @@ el('btn-restart').addEventListener('click', () => {
   Object.assign(S, {
     step: 1, apiNumber: '', wellData: null, buqwDepth: null, gauRef: null,
     aorFindings: [], aorGuidanceLoaded: false, wellType: 'oil',
-    completionType: 'vertical', cementingCompany: null, plugsComputed: false,
+    completionType: 'single', cementingCompany: null, plugsComputed: false,
     attach: { gau: false, w15: false, l1: false, p13: false },
     sigName: '', sigTitle: 'Operator Representative', certDate: '', pdfUrl: null,
   });
