@@ -7,7 +7,6 @@ import pytest
 from plugfile.lookups import (
     FetcherError,
     MockFetcher,
-    RRCRoRQFetcher,
 )
 from tests.fixtures.sample_wellbores import ALL_FIXTURES
 
@@ -91,21 +90,6 @@ def test_unknown_api_raises_fetcher_error() -> None:
 def test_unknown_p5_raises_fetcher_error() -> None:
     with pytest.raises(FetcherError):
         MockFetcher().lookup_operator("999999")
-
-
-def test_real_rrc_adapter_is_a_stub() -> None:
-    """The Phase-2 adapter raises NotImplementedError on every method.
-    This test pins the contract so we notice if someone adds a real
-    implementation without updating dependent code."""
-    rrc = RRCRoRQFetcher()
-    with pytest.raises(NotImplementedError):
-        rrc.lookup_well_by_api("42-371-30001")
-    with pytest.raises(NotImplementedError):
-        rrc.lookup_operator("112233")
-    with pytest.raises(NotImplementedError):
-        rrc.lookup_gau("42-371-30001")
-    with pytest.raises(NotImplementedError):
-        rrc.lookup_completion("42-371-30001")
 
 
 def test_completion_record_returns_independent_copies() -> None:

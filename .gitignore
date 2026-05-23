@@ -13,6 +13,9 @@ out/
 *tokens*.txt
 *secrets*.txt
 *credentials*.txt
+.env
+.env.*
+!.env.example
 .wrangler/
 
 # Excel/LibreOffice lock files

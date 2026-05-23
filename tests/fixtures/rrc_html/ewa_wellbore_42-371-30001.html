@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html><head><title>RRC EWA Wellbore Query - Search Results</title></head>
+<body>
+<form name="wellboreQueryActionForm" method="post"
+      action="wellboreQueryAction.do;jsessionid=TESTSESSION123">
+  <!-- Results summary -->
+  <table>
+    <tr><td>Search Criteria: API No.: 42-371-30001</td>
+        <td>1 results Page: 1 of 1</td></tr>
+  </table>
+
+  <!-- Column header row -->
+  <table id="searchResultsTable">
+    <tr id="headerRow">
+      <td>API No.</td>
+      <td>District</td>
+      <td>Lease No.</td>
+      <td>Lease Name</td>
+      <td>Well No.</td>
+      <td>Field Name</td>
+      <td>Operator Name</td>
+      <td>County</td>
+      <td>On Schedule</td>
+      <td>API Depth</td>
+    </tr>
+
+    <!-- Data row: 10 direct TDs (real EWA structure).
+         td[0] and td[2] contain inner sub-links (as in the live site). -->
+    <tr>
+      <td>
+        <a href="leaseDetailAction.do?searchType=apiNo&amp;selTab=1&amp;apiNo=42371300010000&amp;distCode=08&amp;leaseNo=22757&amp;methodToCall=displayLeaseDetail">42-371-30001</a>
+        <table><tr>
+          <td>Links</td>
+          <td>GIS Viewer</td>
+          <td>Completion</td>
+        </tr></table>
+      </td>
+      <td>08</td>
+      <td>
+        22757
+        <table><tr>
+          <td><a href="leaseDetailAction.do?distCode=08&amp;leaseNo=22757">22757</a></td>
+          <td>Images</td>
+        </tr></table>
+      </td>
+      <td>Heritage A</td>
+      <td>1H</td>
+      <td>Spraberry (Trend Area)</td>
+      <td>Apex Permian Operating LLC</td>
+      <td>Pecos</td>
+      <td>Y</td>
+      <td>10,500</td>
+    </tr>
+  </table>
+</form>
+</body></html>

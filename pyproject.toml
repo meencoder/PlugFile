@@ -45,3 +45,6 @@ packages = ["src/plugfile"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+    "live: marks tests that make real HTTP requests to rrc.texas.gov (skipped by default; enable with --live)",
+]

@@ -34,6 +34,7 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
 from .w3_schema import W3_SCHEMA, W3Form
+from .w3a_schema import W3A_SCHEMA, W3AForm
 
 Tier = Literal["free", "paid"]
 
@@ -536,6 +537,267 @@ def _resolve_template(explicit: Path | None) -> Path:
     raise FileNotFoundError(
         "Could not locate w-3p.pdf. Pass --template explicitly or place "
         "the official RRC W-3 template at the repo root."
+    )
+
+
+# ===========================================================================
+# W-3A (Notice of Intention to Plug and Abandon) overlay
+# ===========================================================================
+#
+# The W-3A is a single-page form (`docs/w-3ap.pdf`, Rev 1/1/83, 612x792).
+# Like the W-3 it has no AcroForm widgets, so values are placed at fixed
+# (x, y) page coordinates.  The coordinates below are a FIRST-PASS calibration
+# derived programmatically from label positions (pypdf text-extraction
+# visitor); fine-tune visually with `render_w3a_calibration_overlay()`.
+
+W3A_WELL_TYPE_NO: dict[str, str] = {
+    "oil": "1", "gas": "2", "disposal": "3", "injection": "4", "other": "5",
+}
+
+W3A_COORDS: dict[str, FieldCoord] = {
+    # Box 1/2/3/4 — operator + district/county (top block)
+    "operator_name":            FieldCoord(0, 48.0, 660.0, 300.0, 9.0),
+    "operator_address":         FieldCoord(0, 48.0, 648.0, 300.0, 8.0),
+    "operator_p5_number":       FieldCoord(0, 175.0, 580.0, 150.0, 9.0),
+    "rrc_district":             FieldCoord(0, 392.0, 660.0, 70.0, 9.0),
+    "county":                   FieldCoord(0, 478.0, 660.0, 120.0, 9.0),
+    # Box 5/6/7/8/9 — ids
+    "api_number":               FieldCoord(0, 395.0, 620.0, 90.0, 9.0),
+    "drilling_permit_no":       FieldCoord(0, 470.0, 620.0, 120.0, 9.0),
+    "rule_37_case_no":          FieldCoord(0, 275.0, 590.0, 95.0, 8.0),
+    "lease_number":             FieldCoord(0, 378.0, 582.0, 100.0, 8.0),
+    "well_number":              FieldCoord(0, 500.0, 590.0, 80.0, 9.0),
+    # Box 10/11 — field + lease name
+    "field_name":               FieldCoord(0, 45.0, 554.0, 230.0, 8.0),
+    "lease_name":               FieldCoord(0, 300.0, 554.0, 175.0, 8.0),
+    # Box 12 — location
+    "section_block_survey":     FieldCoord(0, 70.0, 526.0, 380.0, 7.0),
+    "abstract_no":              FieldCoord(0, 470.0, 535.0, 80.0, 8.0),
+    "location_description":     FieldCoord(0, 360.0, 519.0, 230.0, 7.0),
+    # Box 13/14/15 — type + depth
+    "well_type":                FieldCoord(0, 155.0, 493.0, 40.0, 9.0),
+    "completion_type":          FieldCoord(0, 458.0, 490.0, 60.0, 8.0),
+    "total_depth_ft":           FieldCoord(0, 480.0, 495.0, 90.0, 9.0),
+    # Box 16 — BUQW / GAU
+    "buqw_depth_ft":            FieldCoord(0, 110.0, 463.0, 60.0, 8.0),
+    "gau_letter_reference":     FieldCoord(0, 360.0, 446.0, 180.0, 7.0),
+    "gau_letter_date":          FieldCoord(0, 360.0, 437.0, 180.0, 7.0),
+    # Box 22 — cementer
+    "cementing_company":        FieldCoord(0, 48.0, 160.0, 360.0, 8.0),
+    "cementer_p5_specialty_code": FieldCoord(0, 430.0, 173.0, 120.0, 8.0),
+    # certification (bottom)
+    "operator_signature_name":  FieldCoord(0, 45.0, 88.0, 230.0, 8.0),
+    "operator_title":           FieldCoord(0, 300.0, 88.0, 130.0, 8.0),
+    "certification_date":       FieldCoord(0, 250.0, 86.0, 90.0, 8.0),
+}
+
+# Casing grid (Box 18): rows print "<size>  set @ <depth>  w/ <sacks>".
+W3A_CASING_ROW_Y: tuple[float, ...] = (373.7, 362.8, 350.8, 338.8, 326.8)
+W3A_CASING_SIZE_X = 45.0
+W3A_CASING_DEPTH_X = 112.0
+W3A_CASING_SACKS_X = 165.0
+
+# Proposed-plug list (Box 20 area), drawn as compact text rows.
+W3A_PROPOSAL_X = 45.0
+W3A_PROPOSAL_TOP_Y = 300.0
+W3A_PROPOSAL_LINE_H = 10.0
+W3A_PROPOSAL_MIN_Y = 188.0
+
+
+def render_w3a_pdf(
+    form: W3AForm,
+    *,
+    template_path: Path | None = None,
+    tier: Tier = "free",
+) -> bytes:
+    """Render a print-ready W-3A PDF (Notice of Intention to Plug).
+
+    Single-page overlay onto `docs/w-3ap.pdf`. `tier="free"` adds the DRAFT
+    watermark; `tier="paid"` is clean and appends a W-3A audit-trail page.
+    """
+    template_path = _resolve_w3a_template(template_path)
+    base = PdfReader(str(template_path))
+
+    overlay = PdfReader(BytesIO(_build_w3a_overlay(form, tier=tier)))
+    writer = PdfWriter(clone_from=base)
+    for i, page in enumerate(writer.pages):
+        if i < len(overlay.pages):
+            page.merge_page(overlay.pages[i])
+
+    if tier == "paid":
+        audit = PdfReader(BytesIO(_build_w3a_audit_pages(form)))
+        for p in audit.pages:
+            writer.add_page(p)
+
+    out = BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def render_w3a_calibration_overlay(template_path: Path | None = None) -> bytes:
+    """Calibration overlay for the W-3A: every coord as a labeled red crosshair
+    on the blank form. Use it to visually tune `W3A_COORDS`."""
+    template_path = _resolve_w3a_template(template_path)
+    base = PdfReader(str(template_path))
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=LETTER)
+    c.setStrokeColor(HexColor("#FF0000"))
+    c.setFillColor(HexColor("#FF0000"))
+    c.setFont("Helvetica", 5)
+    for name, coord in W3A_COORDS.items():
+        _crosshair(c, coord.x, coord.y, name)
+    for r, y in enumerate(W3A_CASING_ROW_Y):
+        _crosshair(c, W3A_CASING_SIZE_X, y, f"cas{r+1}.size")
+        _crosshair(c, W3A_CASING_DEPTH_X, y, f"cas{r+1}.depth")
+        _crosshair(c, W3A_CASING_SACKS_X, y, f"cas{r+1}.sacks")
+    _crosshair(c, W3A_PROPOSAL_X, W3A_PROPOSAL_TOP_Y, "proposal.top")
+    c.showPage()
+    c.save()
+    overlay = PdfReader(BytesIO(buf.getvalue()))
+    writer = PdfWriter(clone_from=base)
+    for i, page in enumerate(writer.pages):
+        if i < len(overlay.pages):
+            page.merge_page(overlay.pages[i])
+    out = BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def _build_w3a_overlay(form: W3AForm, *, tier: Tier) -> bytes:
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=LETTER)
+
+    for name, coord in W3A_COORDS.items():
+        v = getattr(form, name, None)
+        if v is None:
+            continue
+        if name == "api_number" and isinstance(v, str) and v.upper().startswith("42-"):
+            v = v[3:]  # state-code prefix is pre-printed
+        if name == "well_type":
+            v = W3A_WELL_TYPE_NO.get(str(v).lower(), str(v))
+        _draw_value(c, coord, v)
+
+    _draw_w3a_casing(c, form)
+    _draw_w3a_proposal(c, form)
+
+    if tier == "free":
+        _draw_watermark(c)
+    c.showPage()
+    c.save()
+    return buf.getvalue()
+
+
+def _draw_w3a_casing(c: "canvas.Canvas", form: W3AForm) -> None:
+    rows = form.casing_record[:len(W3A_CASING_ROW_Y)]
+    if not rows:
+        return
+    c.setFont("Helvetica", 8)
+    for r, cas in enumerate(rows):
+        y = W3A_CASING_ROW_Y[r]
+        c.drawString(W3A_CASING_SIZE_X, y, _fmt_num(cas.get("od_in")))
+        c.drawString(W3A_CASING_DEPTH_X, y, _fmt_num(cas.get("set_depth_ft")))
+        c.drawString(W3A_CASING_SACKS_X, y, _fmt_num(cas.get("sacks_cemented")))
+
+
+def _draw_w3a_proposal(c: "canvas.Canvas", form: W3AForm) -> None:
+    """Render the computed proposed plug program as a compact list in Box 20."""
+    plugs = form.proposed_plug_record
+    if not plugs:
+        return
+    c.setFont("Helvetica", 7)
+    y = W3A_PROPOSAL_TOP_Y
+    for plug in plugs:
+        if y < W3A_PROPOSAL_MIN_Y:
+            break
+        line = (
+            f"{plug.get('name','plug')}: "
+            f"{_fmt_num(plug.get('top_ft'))}-{_fmt_num(plug.get('bottom_ft'))} ft, "
+            f"{_fmt_num(plug.get('volume_sacks'))} sx"
+        )
+        c.drawString(W3A_PROPOSAL_X, y, _fit_text(line, 270.0, 7.0))
+        y -= W3A_PROPOSAL_LINE_H
+
+
+def _build_w3a_audit_pages(form: W3AForm) -> bytes:
+    """Paid-tier W-3A audit page: field sources, rule paths, proposed-plug volumes."""
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=LETTER)
+    y = _w3a_audit_header(c, form)
+
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(72, y, "Field source-of-truth")
+    y -= 14
+    c.setFont("Helvetica", 8)
+    filled = form.filled_fields()
+    for spec in W3A_SCHEMA:
+        mark = "filled" if spec.name in filled else "blank "
+        c.drawString(72, y, f"  {mark}  {spec.name:34s} [box {spec.rrc_section:<8s}] "
+                            f"source={spec.source.value}")
+        y -= 10
+        if y < 60:
+            c.showPage(); y = _w3a_audit_header(c, form); c.setFont("Helvetica", 8)
+
+    if y < 160:
+        c.showPage(); y = _w3a_audit_header(c, form)
+    y -= 6
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(72, y, "TAC §3.14 rule paths exercised (proposal)")
+    y -= 14
+    c.setFont("Helvetica", 9)
+    for rp in (form.plug_program_rule_paths or ["(none)"]):
+        c.drawString(90, y, f"• {rp}"); y -= 12
+
+    y -= 6
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(72, y, "Proposed plug program (per plug)")
+    y -= 14
+    c.setFont("Helvetica", 8)
+    for plug in form.proposed_plug_record:
+        line = (f"  {plug.get('name','')}: {_fmt_num(plug.get('top_ft'))}–"
+                f"{_fmt_num(plug.get('bottom_ft'))} ft  "
+                f"{_fmt_num(plug.get('volume_sacks'))} sacks  "
+                f"({_fmt_num(plug.get('volume_ft3'))} ft³)  cite={plug.get('cite','')}")
+        c.drawString(72, y, line); y -= 10
+        if y < 60:
+            c.showPage(); y = _w3a_audit_header(c, form); c.setFont("Helvetica", 8)
+
+    c.showPage()
+    c.save()
+    return buf.getvalue()
+
+
+def _w3a_audit_header(c: "canvas.Canvas", form: W3AForm) -> float:
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(72, 752, "W-3A Audit Trail — Notice of Intention to Plug")
+    c.setFont("Helvetica", 9)
+    c.drawString(72, 736,
+                 f"API {form.api_number or '—'}    {form.operator_name or '—'}    "
+                 f"{form.lease_name or '—'} #{form.well_number or '—'}    "
+                 f"{form.county or '—'} County")
+    if form.w3a_expiration_date:
+        c.drawString(72, 722, f"W-3A expires: {form.w3a_expiration_date}")
+    c.line(72, 716, PAGE_W - 72, 716)
+    return 700.0
+
+
+def _resolve_w3a_template(explicit: Path | None) -> Path:
+    if explicit is not None:
+        p = Path(explicit)
+        if not p.exists():
+            raise FileNotFoundError(f"W-3A template not found at {p}")
+        return p
+    here = Path(__file__).resolve().parent
+    for candidate in (
+        here.parent.parent / "docs" / "w-3ap.pdf",
+        here.parent.parent / "w-3ap.pdf",
+        Path.cwd() / "docs" / "w-3ap.pdf",
+        Path.cwd() / "w-3ap.pdf",
+    ):
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        "Could not locate w-3ap.pdf. Pass template_path explicitly or place "
+        "the official RRC W-3A form at docs/w-3ap.pdf."
     )
 
 

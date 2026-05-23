@@ -9,20 +9,29 @@ replacement for `MockFetcher`. Production path:
     form, conflicts = prefill_w3("42-371-30001", fetcher)
 
 Architecture:
-  * `requests.Session` with `urllib3` retry for 429/5xx
+  * `requests.Session` with a `_LegacyTLSAdapter` for webapps2.rrc.texas.gov
+    (that server uses TLS cipher suites rejected by Python's default SSL)
+  * Two-step EWA flow: GET establishes JSESSIONID, POST runs the well search
   * 1 req/sec throttle (RRC is government infra; be polite)
   * `diskcache` 24-hour TTL (well-master records rarely change post-completion)
-  * `lxml.html` for parsing the ASPX response pages
-  * Per-field selector specs (`_SELECTORS_*` dicts) so when RRC updates their
-    HTML you change one place per field, not the parser logic
+  * `lxml.html` for parsing the HTML response pages
+  * Positional column extraction from EWA search-results table, with a
+    label-based fallback for nested-table EWA layouts
 
-HTML selectors are calibrated against RRC's public site as best understood.
-RRC occasionally redesigns; the CLI debugger
-(`python -m plugfile.lookups_rrc 42-371-30001`) dumps raw HTML to disk and
-prints the parsed result, turning selector recalibration into a 30-second loop.
+EWA endpoint (well lookup):
+    https://webapps2.rrc.texas.gov/EWA/wellboreQueryAction.do
+    POST params: methodToCall=search, searchArgs.apiNoPrefixArg (3-digit county),
+                 searchArgs.apiNoSuffixArg (5-digit serial)
+    Result columns: API No. | District | Lease No. | Lease Name | Well No. |
+                    Field Name | Operator Name | County | On Schedule | API Depth
+
+CMPL detail endpoint (completion records — still operational):
+    https://webapps.rrc.texas.gov/CMPL/publicSearchAction.do
 
 For test environments without internet egress, see `tests/test_lookups_rrc.py`
 which uses `responses` to stub the HTTP layer with synthetic-but-shaped HTML.
+Run the CLI debugger to recalibrate selectors when RRC updates their HTML:
+    python -m plugfile.lookups_rrc 42-371-30001 --no-cache
 """
 
 from __future__ import annotations
@@ -31,6 +40,8 @@ import argparse
 import dataclasses
 import json
 import os
+import re
+import ssl
 import sys
 import time
 import urllib.parse
@@ -62,20 +73,149 @@ from .lookups import (
 
 # ---- configuration ---------------------------------------------------------
 
-USER_AGENT = "Plugfile-RRC-Fetcher/0.2 (+https://plugfile.com)"
+USER_AGENT = "Plugfile-RRC-Fetcher/0.3 (+https://plugfile.com)"
 DEFAULT_RATE_LIMIT_S = 1.0
 DEFAULT_CACHE_TTL = 86400  # 24 hours
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "plugfile-rrc"
 
-# RRC public-data endpoints. RRC moves these around occasionally; verify
-# current URLs with the CLI debugger if a fetch returns unexpected HTML.
-RRC_CMPL_SEARCH = "https://webapps.rrc.texas.gov/CMPL/searchAction.do"
+# Active RRC endpoints.
+# EWA (Expanded Web Access) — current well-lookup portal.
+RRC_EWA_WELLBORE = "https://webapps2.rrc.texas.gov/EWA/wellboreQueryAction.do"
+# CMPL public completion-packet search — still operational for casing/perf data.
 RRC_CMPL_DETAIL = "https://webapps.rrc.texas.gov/CMPL/publicSearchAction.do"
-RRC_PUR_SEARCH = "https://webapps.rrc.texas.gov/PUR/publicSearchAction.do"
+# GAU letter index — no machine-readable API yet.
 RRC_GAU_LIST = "https://www.rrc.texas.gov/oil-and-gas/applications-and-permits/groundwater-advisory-unit/"
 
+# Legacy constants kept so existing test imports don't break; the live code
+# no longer uses these URLs (both return HTTP 500/404 as of 2025).
+RRC_CMPL_SEARCH = "https://webapps.rrc.texas.gov/CMPL/searchAction.do"   # HTTP 500
+RRC_PUR_SEARCH  = "https://webapps.rrc.texas.gov/PUR/publicSearchAction.do"  # 404
 
-# ---- selector spec (where to look in the HTML) -----------------------------
+
+# ---- Texas county FIPS → county name lookup --------------------------------
+# Used as a reliable fallback when HTML parsing can't extract county from the
+# EWA result page.  FIPS source: US Census Bureau (Texas = state 48, odd codes).
+
+_FIPS_TO_COUNTY: dict[str, str] = {
+    "001": "Anderson",      "003": "Andrews",       "005": "Angelina",
+    "007": "Aransas",       "009": "Archer",        "011": "Armstrong",
+    "013": "Atascosa",      "015": "Austin",        "017": "Bailey",
+    "019": "Bandera",       "021": "Bastrop",       "023": "Baylor",
+    "025": "Bee",           "027": "Bell",          "029": "Bexar",
+    "031": "Blanco",        "033": "Borden",        "035": "Bosque",
+    "037": "Bowie",         "039": "Brazoria",      "041": "Brazos",
+    "043": "Brewster",      "045": "Briscoe",       "047": "Brooks",
+    "049": "Brown",         "051": "Burleson",      "053": "Burnet",
+    "055": "Caldwell",      "057": "Calhoun",       "059": "Callahan",
+    "061": "Cameron",       "063": "Camp",          "065": "Carson",
+    "067": "Cass",          "069": "Castro",        "071": "Chambers",
+    "073": "Cherokee",      "075": "Childress",     "077": "Clay",
+    "079": "Cochran",       "081": "Coke",          "083": "Coleman",
+    "085": "Collin",        "087": "Collingsworth", "089": "Colorado",
+    "091": "Comal",         "093": "Comanche",      "095": "Concho",
+    "097": "Cooke",         "099": "Coryell",       "101": "Cottle",
+    "103": "Crane",         "105": "Crockett",      "107": "Crosby",
+    "109": "Culberson",     "111": "Dallam",        "113": "Dallas",
+    "115": "Dawson",        "117": "Deaf Smith",    "119": "Delta",
+    "121": "Denton",        "123": "Dickens",       "125": "Dimmit",
+    "127": "Donley",        "129": "Duval",         "131": "Duval",
+    "133": "Eastland",      "135": "Ector",         "137": "Edwards",
+    "139": "Ellis",         "141": "El Paso",       "143": "Erath",
+    "145": "Falls",         "147": "Fannin",        "149": "Fayette",
+    "151": "Fisher",        "153": "Floyd",         "155": "Foard",
+    "157": "Fort Bend",     "159": "Franklin",      "161": "Freestone",
+    "163": "Frio",          "165": "Gaines",        "167": "Galveston",
+    "169": "Garza",         "171": "Gillespie",     "173": "Glasscock",
+    "175": "Goliad",        "177": "Gonzales",      "179": "Gray",
+    "181": "Grayson",       "183": "Gregg",         "185": "Grimes",
+    "187": "Guadalupe",     "189": "Hale",          "191": "Hall",
+    "193": "Hamilton",      "195": "Hansford",      "197": "Hardeman",
+    "199": "Hardin",        "201": "Harris",        "203": "Harrison",
+    "205": "Hartley",       "207": "Haskell",       "209": "Hays",
+    "211": "Hemphill",      "213": "Henderson",     "215": "Hidalgo",
+    "217": "Hill",          "219": "Hockley",       "221": "Hood",
+    "223": "Hopkins",       "225": "Houston",       "227": "Howard",
+    "229": "Hudspeth",      "231": "Hunt",          "233": "Hutchinson",
+    "235": "Irion",         "237": "Jack",          "239": "Jackson",
+    "241": "Jasper",        "243": "Jeff Davis",    "245": "Jefferson",
+    "247": "Jim Hogg",      "249": "Jim Wells",     "251": "Johnson",
+    "253": "Jones",         "255": "Karnes",        "257": "Kaufman",
+    "259": "Kendall",       "261": "Kenedy",        "263": "Kent",
+    "265": "Kerr",          "267": "Kimble",        "269": "King",
+    "271": "Kinney",        "273": "Kleberg",       "275": "Knox",
+    "277": "Lamar",         "279": "Lamb",          "281": "Lampasas",
+    "283": "La Salle",      "285": "Lavaca",        "287": "Lee",
+    "289": "Leon",          "291": "Liberty",       "293": "Limestone",
+    "295": "Lipscomb",      "297": "Live Oak",      "299": "Llano",
+    "301": "Loving",        "303": "Lubbock",       "305": "Lynn",
+    "307": "McCulloch",     "309": "McLennan",      "311": "McMullen",
+    "313": "Madison",       "315": "Marion",        "317": "Martin",
+    "319": "Mason",         "321": "Matagorda",     "323": "Maverick",
+    "325": "Medina",        "327": "Menard",        "329": "Midland",
+    "331": "Milam",         "333": "Mills",         "335": "Mitchell",
+    "337": "Montague",      "339": "Montgomery",    "341": "Moore",
+    "343": "Morris",        "345": "Motley",        "347": "Nacogdoches",
+    "349": "Navarro",       "351": "Newton",        "353": "Nolan",
+    "355": "Nueces",        "357": "Ochiltree",     "359": "Oldham",
+    "361": "Orange",        "363": "Palo Pinto",    "365": "Panola",
+    "367": "Parker",        "369": "Parmer",        "371": "Pecos",
+    "373": "Polk",          "375": "Potter",        "377": "Presidio",
+    "379": "Rains",         "381": "Randall",       "383": "Reagan",
+    "385": "Real",          "387": "Red River",     "389": "Reeves",
+    "391": "Refugio",       "393": "Roberts",       "395": "Robertson",
+    "397": "Rockwall",      "399": "Runnels",       "401": "Rusk",
+    "403": "Sabine",        "405": "San Augustine", "407": "San Jacinto",
+    "409": "San Patricio",  "411": "San Saba",      "413": "Schleicher",
+    "415": "Scurry",        "417": "Shackelford",   "419": "Shelby",
+    "421": "Sherman",       "423": "Smith",         "425": "Somervell",
+    "427": "Starr",         "429": "Stephens",      "431": "Sterling",
+    "433": "Stonewall",     "435": "Sutton",        "437": "Swisher",
+    "439": "Tarrant",       "441": "Taylor",        "443": "Terrell",
+    "445": "Terry",         "447": "Throckmorton",  "449": "Titus",
+    "451": "Tom Green",     "453": "Travis",        "455": "Trinity",
+    "457": "Tyler",         "459": "Upshur",        "461": "Upton",
+    "463": "Uvalde",        "465": "Val Verde",     "467": "Van Zandt",
+    "469": "Victoria",      "471": "Walker",        "473": "Waller",
+    "475": "Ward",          "477": "Washington",    "479": "Webb",
+    "481": "Wharton",       "483": "Wheeler",       "485": "Wichita",
+    "487": "Wilbarger",     "489": "Willacy",       "491": "Williamson",
+    "493": "Wilson",        "495": "Winkler",       "497": "Wise",
+    "499": "Wood",          "501": "Yoakum",        "503": "Young",
+    "505": "Zapata",        "507": "Zavala",
+}
+
+
+# ---- TLS adapter for webapps2.rrc.texas.gov --------------------------------
+
+class _LegacyTLSAdapter(HTTPAdapter):
+    """Custom HTTPS adapter that lowers TLS cipher security level.
+
+    webapps2.rrc.texas.gov uses older TLS cipher suites that Python's default
+    OpenSSL rejects with SSLV3_ALERT_HANDSHAKE_FAILURE.  Lowering to SECLEVEL=1
+    re-enables the legacy ciphers needed to connect.
+
+    Mounted only on https://webapps2.rrc.texas.gov so all other HTTPS traffic
+    keeps the normal security settings.
+    """
+
+    def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
+        ctx = ssl.create_default_context()
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        kwargs["ssl_context"] = ctx
+        super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, proxy: str, **proxy_kwargs: Any):  # type: ignore[override]
+        ctx = ssl.create_default_context()
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        proxy_kwargs["ssl_context"] = ctx
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
+
+# ---- selector spec (used by completion and operator lookups) ---------------
 
 @dataclasses.dataclass(frozen=True)
 class _Selector:
@@ -96,9 +236,44 @@ class _Selector:
     default: Any = None
 
 
-# Well-master detail page selectors. These are best-known XPaths against RRC's
-# public CMPL detail page format. Verify with the CLI debugger if results look
-# wrong; update the XPath here, not the parser.
+# Operator P-5 detail page selectors (kept for when PUR endpoint is restored).
+_SELECTORS_OPERATOR: dict[str, _Selector] = {
+    "operator_name": _Selector(
+        xpath="//td[contains(., 'Operator Name')]/following-sibling::td[1]",
+        transform=lambda s: s.strip(),
+    ),
+    "operator_p5_number": _Selector(
+        xpath="//td[contains(., 'Operator No.') or contains(., 'P-5 No')]/following-sibling::td[1]",
+        transform=lambda s: s.strip().zfill(6),
+    ),
+    "operator_address": _Selector(
+        xpath="//td[contains(., 'Address')]/following-sibling::td[1]",
+        transform=lambda s: " ".join(s.split()),
+    ),
+}
+
+# Completion-record selectors.  Casing strings and perforations are tabular —
+# parsed as repeated rows, not single cells.  See `_parse_casing_table` and
+# `_parse_perf_table` below.
+_SELECTORS_COMPLETION: dict[str, _Selector] = {
+    "total_depth_ft": _Selector(
+        xpath="//td[contains(., 'Total Depth') or contains(., 'TD')]/following-sibling::td[1]",
+        transform=lambda s: float(s.strip().replace(",", "")) if s.strip() else 0.0,
+    ),
+    "spud_date": _Selector(
+        xpath="//td[contains(., 'Spud Date')]/following-sibling::td[1]",
+        transform=lambda s: _to_iso_date(s.strip()),
+        required=False, default="",
+    ),
+    "completion_date": _Selector(
+        xpath="//td[contains(., 'Completion Date') or contains(., 'Date Completed')]/following-sibling::td[1]",
+        transform=lambda s: _to_iso_date(s.strip()),
+        required=False, default="",
+    ),
+}
+
+# Well-detail selectors retained for completion HTML that also carries well
+# metadata (the CMPL detail page shares both).
 _SELECTORS_WELL: dict[str, _Selector] = {
     "api_number": _Selector(
         xpath="//td[contains(., 'API No.') or contains(., 'API Number')]/following-sibling::td[1]",
@@ -130,10 +305,6 @@ _SELECTORS_WELL: dict[str, _Selector] = {
         transform=lambda s: s.strip(),
         required=False, default="",
     ),
-    "operator_p5_number": _Selector(
-        xpath="//td[contains(., 'Operator No.') or contains(., 'P-5')]/following-sibling::td[1]",
-        transform=lambda s: s.strip().zfill(6),
-    ),
     "latitude": _Selector(
         xpath="//td[contains(., 'Latitude')]/following-sibling::td[1]",
         transform=lambda s: float(s.strip()) if s.strip() else 0.0,
@@ -162,42 +333,20 @@ _SELECTORS_WELL: dict[str, _Selector] = {
 }
 
 
-# Operator P-5 detail page selectors.
-_SELECTORS_OPERATOR: dict[str, _Selector] = {
-    "operator_name": _Selector(
-        xpath="//td[contains(., 'Operator Name')]/following-sibling::td[1]",
-        transform=lambda s: s.strip(),
-    ),
-    "operator_p5_number": _Selector(
-        xpath="//td[contains(., 'Operator No.') or contains(., 'P-5 No')]/following-sibling::td[1]",
-        transform=lambda s: s.strip().zfill(6),
-    ),
-    "operator_address": _Selector(
-        xpath="//td[contains(., 'Address')]/following-sibling::td[1]",
-        transform=lambda s: " ".join(s.split()),
-    ),
-}
+def _normalize_district(d: str) -> str:
+    """Normalize RRC district codes to zero-padded canonical form.
 
-
-# Completion-record selectors. Casing strings and perforations are tabular —
-# parsed as repeated rows, not single cells. See `_parse_casing_table` and
-# `_parse_perf_table` below.
-_SELECTORS_COMPLETION: dict[str, _Selector] = {
-    "total_depth_ft": _Selector(
-        xpath="//td[contains(., 'Total Depth') or contains(., 'TD')]/following-sibling::td[1]",
-        transform=lambda s: float(s.strip().replace(",", "")) if s.strip() else 0.0,
-    ),
-    "spud_date": _Selector(
-        xpath="//td[contains(., 'Spud Date')]/following-sibling::td[1]",
-        transform=lambda s: _to_iso_date(s.strip()),
-        required=False, default="",
-    ),
-    "completion_date": _Selector(
-        xpath="//td[contains(., 'Completion Date') or contains(., 'Date Completed')]/following-sibling::td[1]",
-        transform=lambda s: _to_iso_date(s.strip()),
-        required=False, default="",
-    ),
-}
+    EWA returns '7B', '8A', '6', '09' etc.  We normalize to '07B', '08A',
+    '06', '09' so comparisons against the well database (which uses '07B'
+    etc.) work correctly.
+    """
+    d = d.strip()
+    if not d:
+        return d
+    m = re.match(r"^0*(\d+)([A-Za-z]*)$", d)
+    if m:
+        return f"{int(m.group(1)):02d}{m.group(2).upper()}"
+    return d.upper()
 
 
 def _to_iso_date(s: str) -> str:
@@ -224,6 +373,11 @@ class RRCRoRQFetcher:
         from plugfile.lookups_rrc import RRCRoRQFetcher
         from plugfile.prefill import prefill_w3
         form, conflicts = prefill_w3("42-371-30001", RRCRoRQFetcher())
+
+    Well lookup uses the EWA (Expanded Web Access) portal via a two-step
+    GET → POST flow.  Completion lookup uses the legacy CMPL endpoint which
+    still accepts public requests.  Operator lookup (PUR/P-5) is currently
+    unavailable as a public endpoint and raises FetcherError.
     """
 
     def __init__(
@@ -250,14 +404,18 @@ class RRCRoRQFetcher:
         s.headers["User-Agent"] = USER_AGENT
         s.headers["Accept"] = "text/html,application/xhtml+xml"
         retry = Retry(
-            total=2,                       # only retry transient failures, not config errors
+            total=2,
             backoff_factor=1.0,
-            status_forcelist=(429, 502, 503, 504),  # 500 dropped — usually wrong URL/params
+            status_forcelist=(429, 502, 503, 504),
             allowed_methods=("GET", "POST"),
         )
-        adapter = HTTPAdapter(max_retries=retry)
-        s.mount("http://", adapter)
-        s.mount("https://", adapter)
+        # Legacy-TLS adapter for EWA host (older cipher suites required).
+        ewa_adapter = _LegacyTLSAdapter(max_retries=retry)
+        std_adapter = HTTPAdapter(max_retries=retry)
+        # Mount order matters: more specific prefix wins.
+        s.mount("https://webapps2.rrc.texas.gov", ewa_adapter)
+        s.mount("https://", std_adapter)
+        s.mount("http://", std_adapter)
         return s
 
     def _throttle(self) -> None:
@@ -270,6 +428,7 @@ class RRCRoRQFetcher:
         self, url: str, params: Optional[dict] = None,
         method: str = "GET", data: Optional[dict] = None,
     ) -> str:
+        """Generic cached GET/POST helper (used by completion and operator lookups)."""
         cache_key = json.dumps(
             {"u": url, "p": params or {}, "m": method, "d": data or {}},
             sort_keys=True,
@@ -278,35 +437,85 @@ class RRCRoRQFetcher:
         if cached is not None:
             return cached  # type: ignore[no-any-return]
         self._throttle()
-        full_url = url
-        if params:
-            full_url = url + "?" + urllib.parse.urlencode(params)
+        full_url = url + ("?" + urllib.parse.urlencode(params) if params else "")
         try:
             if method == "POST":
                 resp = self.session.post(url, data=data, params=params,
                                          timeout=self.timeout_s)
             else:
-                resp = self.session.get(url, params=params,
-                                        timeout=self.timeout_s)
-            if resp.status_code == 500:
-                raise FetcherError(
-                    "RRC returned HTTP 500 for " + full_url + "\n"
-                    "\nThis usually means the URL or parameters don't "
-                    "match RRC's current schema. Run:\n"
-                    "  python -m plugfile.lookups_rrc --inspect "
-                    "'<paste real URL from browser DevTools>'\n"
-                    "to see what response RRC returns for a URL you know "
-                    "works. Then update the RRC_*_SEARCH constants and "
-                    "selector XPaths in lookups_rrc.py."
-                )
+                resp = self.session.get(url, params=params, timeout=self.timeout_s)
             resp.raise_for_status()
         except requests.RequestException as e:
-            raise FetcherError(
-                f"RRC HTTP error fetching {full_url}: {e}"
-            ) from None
+            raise FetcherError(f"RRC HTTP error fetching {full_url}: {e}") from None
         text = resp.text
         self.cache.set(cache_key, text, expire=self.cache_ttl)
         return text
+
+    def _ewa_fetch(self, county_code: str, serial: str) -> str:
+        """Two-step EWA wellbore query: GET search form, POST to form action URL.
+
+        The EWA embeds the JSESSIONID in the form action URL (URL rewriting for
+        session management).  We must:
+          1. GET the wellbore query page (follow redirects) to obtain the form
+          2. Extract the form's action URL (which contains ;jsessionid=...)
+          3. POST the search to that exact action URL
+
+        The response HTML is cached so repeated lookups don't re-hit RRC.
+        county_code: 3-digit Texas county FIPS (e.g. '371')
+        serial:      5-digit well serial (e.g. '00001')
+        """
+        cache_key = f"ewa_v4:{county_code}:{serial}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached  # type: ignore[no-any-return]
+
+        self._throttle()
+        try:
+            # Step 1: GET the search form (follow redirects for any TLS handshake pages).
+            r1 = self.session.get(
+                RRC_EWA_WELLBORE,
+                allow_redirects=True,
+                timeout=self.timeout_s,
+            )
+            r1.raise_for_status()
+
+            # Extract the form's action URL (contains ;jsessionid= path segment).
+            form_tree = lxml.html.fromstring(r1.text)
+            forms = form_tree.xpath('//form[@method="post"]')
+            if forms:
+                action = forms[0].get("action", "")
+                post_url = urllib.parse.urljoin(
+                    f"https://webapps2.rrc.texas.gov/EWA/", action
+                )
+            else:
+                post_url = RRC_EWA_WELLBORE
+
+            # Step 2: POST the well search with API number components.
+            # leaseTypeArg="" means all lease types (O=oil, G=gas, ""=all).
+            resp = self.session.post(
+                post_url,
+                timeout=self.timeout_s,
+                data={
+                    "methodToCall": "search",
+                    "searchArgs.apiNoPrefixArg": county_code,
+                    "searchArgs.apiNoSuffixArg": serial,
+                    "searchArgs.leaseTypeArg": "",
+                    "searchArgs.districtCodeArg": "None Selected",
+                    "searchArgs.wellTypeArg": "None Selected",
+                    "searchArgs.countyCodeArg": "None Selected",
+                    "searchArgs.fieldNumbersArg": "",
+                    "searchArgs.operatorNumbersArg": "",
+                },
+            )
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise FetcherError(
+                f"RRC EWA HTTP error for county={county_code} serial={serial}: {e}"
+            ) from None
+
+        html = resp.text
+        self.cache.set(cache_key, html, expire=self.cache_ttl)
+        return html
 
     # ---- generic field extractor ----
 
@@ -336,68 +545,170 @@ class RRCRoRQFetcher:
             out[name] = spec.transform(raw) if spec.transform else raw.strip()
         return out
 
+    # ---- EWA result parser ----
+
+    def _parse_ewa_well(
+        self, html: str, api_number: str, county_code: str,
+    ) -> WellLookupResult:
+        """Parse the EWA wellbore-query search-results page.
+
+        Real EWA HTML structure (verified against live site):
+          Each result occupies one outer <tr> with 10 direct <td> elements:
+            0: API No.     (td.text = API; inner sub-table with navigation links)
+            1: District    (plain text)
+            2: Lease No.   (td.text = lease no.; inner sub-table with links)
+            3: Lease Name  (plain text)
+            4: Well No.    (plain text)
+            5: Field Name  (plain text)
+            6: Operator Name (plain text)
+            7: County      (plain text)
+            8: On Schedule (plain text)
+            9: API Depth   (plain text)
+          Additionally, inner <tr> elements from nested sub-tables also match
+          '//tr[.//a[contains(@href,"leaseDetailAction")]]', giving 4 TR
+          ancestors per result in the XPath query.
+
+        Extraction strategy (most→least reliable):
+          1. URL params in leaseDetailAction href  → district, lease_no (always)
+          2. Walk up from link to the outer TR with ≥ 8 direct TDs
+          3. Positional column extraction (columns 3–7)
+             For td[0]/td[2] (which contain inner sub-links): use _first_text()
+             to get only the leading text node, not the sub-table content
+          4. County FIPS lookup from API number (last-resort fallback)
+        """
+        tree = lxml.html.fromstring(html)
+
+        # No-results check: EWA says "No results found" or "(Ewa_117)" etc.
+        page_lower = tree.text_content().lower()
+        no_result_phrases = [
+            "no result", "no well found", "no records found",
+            "ewa_117", "could not find", "no wells were found",
+        ]
+        if any(p in page_lower for p in no_result_phrases):
+            raise FetcherError(f"no result for API {api_number}")
+
+        # Find the leaseDetailAction link (one per search result well).
+        links = tree.xpath('//a[contains(@href,"leaseDetailAction")]')
+        if not links:
+            raise FetcherError(f"no result for API {api_number}")
+
+        link = links[0]
+        href = link.get("href", "")
+
+        # --- URL-param extraction (reliable) ---
+        def _url_p(name: str) -> str:
+            m = re.search(rf"[?&]{re.escape(name)}=([^&\s]+)", href)
+            return urllib.parse.unquote_plus(m.group(1)).strip() if m else ""
+
+        district = _normalize_district(_url_p("distCode"))
+        lease_no = _url_p("leaseNo")
+
+        # --- Walk up to find the outer data TR (≥ 8 direct TDs) ---
+        # The inner TR (containing the API link directly) has only 2 TDs;
+        # the outer TR with all 10 columns is a higher ancestor.
+        elem: Any = link
+        data_tr: Any = None
+        while True:
+            parent = elem.getparent()
+            if parent is None:
+                break
+            if parent.tag == "tr":
+                n = len(parent.xpath("./td"))
+                if n >= 8:
+                    data_tr = parent
+                    break
+            elem = parent
+
+        lease_name = well_number = field_name = operator_name = county_html = ""
+
+        if data_tr is not None:
+            direct_tds = data_tr.xpath("./td")
+
+            # _first_text: get the leading text node of a TD, ignoring any
+            # inner sub-elements (e.g. the navigation sub-table in col 0/2).
+            def _first_text(td: Any) -> str:
+                for t in td.itertext():
+                    t = t.strip()
+                    if t:
+                        return t
+                return ""
+
+            def _full_text(n: int) -> str:
+                return direct_tds[n].text_content().strip() if n < len(direct_tds) else ""
+
+            # Columns 3–7 contain only plain text (no inner sub-elements).
+            lease_name    = _full_text(3)
+            well_number   = _full_text(4)
+            field_name    = _full_text(5)
+            operator_name = _full_text(6)
+            county_html   = _full_text(7).title()
+
+            # If district wasn't in URL params, fall back to column 1.
+            if not district:
+                district = _normalize_district(_first_text(direct_tds[1]) if direct_tds else "")
+
+            # Lease No. fallback: first text node of td[2] (e.g. "22757" before the sub-link).
+            if not lease_no and len(direct_tds) > 2:
+                lease_no = _first_text(direct_tds[2])
+
+        # --- County: HTML value or FIPS lookup fallback ---
+        county = county_html or _FIPS_TO_COUNTY.get(county_code, "")
+
+        # Canonical API: "42-371-30001" (10-digit display form)
+        digits = api_number.replace("-", "").strip()
+
+        return {  # type: ignore[return-value]
+            "api_number": _format_api(digits),
+            "lease_name": lease_name or f"Lease {lease_no}",  # never empty
+            "lease_number": lease_no,
+            "well_number": well_number,
+            "county": county,
+            "rrc_district": district,
+            "field_name": field_name,
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "footage_ns": "",
+            "footage_ew": "",
+            "section_block_survey": "",
+        }
+
     # ---- Fetcher protocol implementations ----
 
     def lookup_well_by_api(self, api_number: str) -> WellLookupResult:
-        api_compact = api_number.replace("-", "").strip()
-        if not api_compact.startswith("42") or len(api_compact) not in (10, 14):
+        """Fetch well metadata from RRC EWA wellbore query.
+
+        Raises FetcherError if the API format is invalid, the well is not
+        found in RRC, or a network error occurs.
+        """
+        digits = api_number.replace("-", "").strip()
+        if not digits.startswith("42") or len(digits) not in (10, 14):
             raise FetcherError(
-                f"Texas API numbers are 10 digits (42-XXX-XXXXX) or 14 "
-                f"digits with completion suffix; got {api_number!r}"
+                f"Texas API numbers are 10 or 14 digits (42-XXX-XXXXX); "
+                f"got {api_number!r}"
             )
-        # Normalize to 14-digit form for the RRC search (it accepts both
-        # but returns the long form on the detail page).
-        if len(api_compact) == 10:
-            api_compact = api_compact + "0000"
-        # RRC's CMPL search by API. Form fields are best-known; if RRC
-        # updates the form, the CLI debugger will show the actual params.
-        params = {
-            "method": "doSearch",
-            "searchArgs.apiNumber": api_compact,
-        }
-        html_text = self._get_html(RRC_CMPL_SEARCH, params=params)
-        tree = lxml.html.fromstring(html_text)
-        if not _looks_like_well_detail(tree):
-            raise FetcherError(
-                f"RRC search for API {api_number} returned no detail page. "
-                f"Either the well doesn't exist or RRC's response format "
-                f"changed. Inspect with the CLI debugger."
-            )
-        fields = self._extract(tree, _SELECTORS_WELL, f"well {api_number}")
-        # Re-format API to canonical XX-XXX-XXXXX
-        return {  # type: ignore[return-value]
-            "api_number": _format_api(api_compact),
-            "lease_name": fields["lease_name"],
-            "lease_number": fields["lease_number"],
-            "well_number": fields["well_number"],
-            "county": fields["county"],
-            "rrc_district": fields["rrc_district"],
-            "field_name": fields["field_name"],
-            "latitude": fields["latitude"],
-            "longitude": fields["longitude"],
-            "footage_ns": fields["footage_ns"],
-            "footage_ew": fields["footage_ew"],
-            "section_block_survey": fields["section_block_survey"],
-        }
+        county_code = digits[2:5]   # "371"
+        serial      = digits[5:10]  # "30001"
+
+        html = self._ewa_fetch(county_code, serial)
+        return self._parse_ewa_well(html, api_number, county_code)
 
     def lookup_operator(self, p5_number: str) -> OperatorLookupResult:
-        p5 = p5_number.zfill(6)
-        params = {"method": "doSearch", "searchArgs.operatorNumber": p5}
-        html_text = self._get_html(RRC_PUR_SEARCH, params=params)
-        tree = lxml.html.fromstring(html_text)
-        fields = self._extract(tree, _SELECTORS_OPERATOR, f"operator P-5 {p5}")
-        return {  # type: ignore[return-value]
-            "operator_name": fields["operator_name"],
-            "operator_p5_number": fields["operator_p5_number"],
-            "operator_address": fields["operator_address"],
-        }
+        """Fetch operator name and address from RRC P-5 record.
+
+        NOTE: The RRC PUR (public operator registry) endpoint is currently
+        unavailable as an unauthenticated public resource.  This method
+        raises FetcherError until the endpoint is restored or a replacement
+        is identified.  Use RRC's web interface directly for operator lookup:
+        https://webapps.rrc.texas.gov/PUR/
+        """
+        raise FetcherError(
+            f"RRC operator lookup (PUR endpoint) is not currently available "
+            f"as a public API.  P-5 number: {p5_number!r}. "
+            f"Use the RRC website directly: https://webapps.rrc.texas.gov/PUR/"
+        )
 
     def lookup_gau(self, api_number: str) -> GAULookupResult:
-        # GAU letters are individual PDFs, not in a structured query interface.
-        # Phase 2A: best-effort — return a "GAU lookup not yet automated"
-        # marker so downstream code knows to ask the operator for the BUQW
-        # depth manually. Phase 2B will integrate the GAU portal once we
-        # have a real well to test against.
+        """GAU letter automation is not yet implemented (Phase 2C)."""
         raise FetcherError(
             f"GAU letter lookup for API {api_number} is not yet automated. "
             f"GAU letters are filed as PDFs against specific permits and "
@@ -406,8 +717,8 @@ class RRCRoRQFetcher:
         )
 
     def lookup_completion(self, api_number: str) -> CompletionRecordResult:
+        """Fetch completion record (casing + perforations) from RRC CMPL endpoint."""
         api_compact = api_number.replace("-", "")
-        # Completion details typically live on the same well-detail page.
         params = {
             "method": "doSearch",
             "searchArgs.apiNumber": api_compact,
@@ -415,6 +726,12 @@ class RRCRoRQFetcher:
         }
         html_text = self._get_html(RRC_CMPL_DETAIL, params=params)
         tree = lxml.html.fromstring(html_text)
+
+        # Guard against a no-results page reaching the selector extractor.
+        page_lower = tree.text_content().lower()
+        if "no result" in page_lower or "not found" in page_lower:
+            raise FetcherError(f"No completion record found for {api_number}")
+
         fields = self._extract(
             tree, _SELECTORS_COMPLETION, f"completion {api_number}"
         )
@@ -429,26 +746,17 @@ class RRCRoRQFetcher:
         }
 
     def operator_p5_for_api(self, api_number: str) -> str:
-        """Helper used by prefill.prefill_w3."""
-        well = self.lookup_well_by_api(api_number)
-        # The selector pulled operator_p5_number into the well lookup; we
-        # intentionally don't include it in WellLookupResult typed-dict
-        # because the protocol requires lookup_operator to be a separate
-        # call, but we cache it in the diskcache so the next call to
-        # lookup_operator hits the cache for the same P-5 number.
-        # If the well selector didn't capture it, fall back to a separate
-        # search; for now we re-fetch via the well page.
-        api_compact = api_number.replace("-", "")
-        params = {"method": "doSearch", "searchArgs.apiNumber": api_compact}
-        html_text = self._get_html(RRC_CMPL_SEARCH, params=params)
-        tree = lxml.html.fromstring(html_text)
-        spec = _SELECTORS_WELL["operator_p5_number"]
-        matches = tree.xpath(spec.xpath)
-        if not matches:
-            raise FetcherError(
-                f"Could not extract operator P-5 from well {api_number}"
-            )
-        return spec.transform(matches[0].text_content()) if spec.transform else matches[0].text_content()
+        """Resolve the operator P-5 number for a well.
+
+        Currently unavailable — the RRC CMPL search endpoint that provided
+        this data returns HTTP 500.  Raises FetcherError until a replacement
+        endpoint is confirmed.
+        """
+        raise FetcherError(
+            f"Operator P-5 resolution is not available via current RRC endpoints. "
+            f"API: {api_number}. Check https://webapps.rrc.texas.gov/ for "
+            f"manual lookup."
+        )
 
 
 # ---- table parsers ---------------------------------------------------------
@@ -522,24 +830,8 @@ def _to_float(s: str) -> float:
     return float(s)
 
 
-def _looks_like_well_detail(tree: Any) -> bool:
-    """Sanity check: does this look like a real well-detail page?
-
-    Looks for the specific labeled fields RRC's detail page uses, not
-    bare substrings (which would false-positive on the word 'Please' on
-    no-results pages, etc.).
-    """
-    txt = tree.text_content()
-    has_api_label = ("API No." in txt or "API Number" in txt)
-    has_lease_label = ("Lease Name" in txt or "Lease No." in txt
-                       or "Lease Number" in txt)
-    return has_api_label and has_lease_label
-
-
 def _format_api(api_compact: str) -> str:
-    """Compact API → 'XX-XXX-XXXXX'. Accepts 10 or 14 digit forms; the
-    canonical Plugfile display format is 10 digits (42-XXX-XXXXX) regardless
-    of whether RRC returns 10 or 14."""
+    """Compact API → 'XX-XXX-XXXXX'.  Accepts 10 or 14 digit forms."""
     digits = api_compact.replace("-", "").strip()
     if len(digits) in (10, 14):
         return f"{digits[:2]}-{digits[2:5]}-{digits[5:10]}"
@@ -557,12 +849,9 @@ def _cli_main() -> int:
     )
     p.add_argument("api_number", help="Texas API number, e.g. 42-371-30001")
     p.add_argument(
-        "--what", choices=("well", "operator", "completion"),
+        "--what", choices=("well", "completion"),
         default="well",
         help="Which lookup to perform (default: well).",
-    )
-    p.add_argument(
-        "--p5", help="P-5 operator number for --what=operator",
     )
     p.add_argument(
         "--dump-dir", default="./rrc_html_dumps",
@@ -575,9 +864,7 @@ def _cli_main() -> int:
     p.add_argument(
         "--inspect", metavar="URL",
         help="Skip parsing; just GET this URL and dump headers + body to "
-             "stdout. Use this to verify a URL you found via browser "
-             "DevTools returns what you expect, before updating the "
-             "RRC_*_SEARCH constants.",
+             "stdout.  Use this to verify a URL from browser DevTools.",
     )
     args = p.parse_args()
 
@@ -585,26 +872,20 @@ def _cli_main() -> int:
         import requests as _r
         print("GET " + args.inspect)
         try:
-            r = _r.get(args.inspect, headers={"User-Agent": USER_AGENT}, timeout=30)
-            ctype = r.headers.get("content-type", "?")
-            print("")
-            print("status: " + str(r.status_code))
-            print("content-type: " + ctype)
-            print("body length: " + str(len(r.text)) + " bytes")
-            print("")
+            r = _r.get(args.inspect, headers={"User-Agent": USER_AGENT}, timeout=30,
+                       verify=False)
+            print(f"\nstatus: {r.status_code}")
+            print(f"content-type: {r.headers.get('content-type', '?')}")
+            print(f"body length: {len(r.text)} bytes\n")
             from pathlib import Path as _P
             dump = _P(args.dump_dir) / "inspect_response.html"
             dump.parent.mkdir(parents=True, exist_ok=True)
             dump.write_text(r.text, encoding="utf-8")
-            print("full body saved to: " + str(dump))
-            print("")
-            print("--- first 4 KB ---")
-            print(r.text[:4096])
+            print(f"full body saved to: {dump}\n--- first 4 KB ---\n{r.text[:4096]}")
         except Exception as e:
             print("FETCH ERROR: " + str(e))
             return 1
         return 0
-
 
     cache_dir = None
     if args.no_cache:
@@ -619,16 +900,10 @@ def _cli_main() -> int:
     try:
         if args.what == "well":
             result = fetcher.lookup_well_by_api(args.api_number)
-        elif args.what == "operator":
-            if not args.p5:
-                print("ERROR: --p5 required for --what=operator")
-                return 2
-            result = fetcher.lookup_operator(args.p5)
-        elif args.what == "completion":
+        else:
             result = fetcher.lookup_completion(args.api_number)
     except FetcherError as e:
         print(f"\nFETCHER ERROR: {e}")
-        # Dump the HTML even on failure so the user can inspect why
         return 1
 
     print("\nParsed result:")

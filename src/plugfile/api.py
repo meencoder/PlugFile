@@ -21,18 +21,27 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from plugfile.gau_parser import GauParseError, parse_gau_pdf
+from plugfile.attachments import check_attachments
+from plugfile.gau_parser import GauParseError, parse_gau_pdf, _load_dotenv
 from plugfile.lookups import MockFetcher
 from plugfile.narrative import transcript_to_narrative
-from plugfile.pdf_export import render_w3_pdf
+from plugfile.pdf_export import render_w3_pdf, render_w3a_pdf
+from plugfile.plug_plan import build_plug_plan
+from plugfile.portal_format import format_for_portal
 from plugfile.prefill import prefill_w3
+from plugfile.prefill_w3a import prefill_w3a
+
+# Load a repo-root .env (if present) so ANTHROPIC_API_KEY, PLUGFILE_RRC_LIVE,
+# and PLUGFILE_LLM_FALLBACK work without depending on the launching shell's
+# environment. Real environment variables always take precedence.
+_load_dotenv()
 
 app = FastAPI(
     title="Plugfile",
@@ -50,8 +59,8 @@ _STATIC = Path(__file__).parent / "static"
 def _fetcher():
     """Return live RrcFetcher if env var set, else MockFetcher for dev/demo."""
     if os.environ.get("PLUGFILE_RRC_LIVE", "").strip().lower() in ("1", "true", "yes"):
-        from plugfile.lookups_rrc import RrcFetcher
-        return RrcFetcher()
+        from plugfile.lookups_rrc import RRCRoRQFetcher
+        return RRCRoRQFetcher()
     return MockFetcher()
 
 
@@ -77,6 +86,60 @@ class GenerateRequest(BaseModel):
     gau_letter_reference: Optional[str] = None
     narrative: Optional[str] = None  # Section IX text (edited by operator)
     paid_tier: bool = False
+
+
+class W3APrefillRequest(BaseModel):
+    """Prefill a W-3A (Notice of Intention to Plug). `overrides` carries
+    operator-sourced fields (well_type, completion_type, aor_findings,
+    cementer info, certification, etc.)."""
+    api_number: str
+    overrides: Optional[dict[str, Any]] = None
+
+
+class W3AGenerateRequest(BaseModel):
+    """Generate a filled W-3A PDF. Same as W3APrefillRequest plus tier flag."""
+    api_number: str
+    overrides: Optional[dict[str, Any]] = None
+    paid_tier: bool = False
+
+
+class PlugProgramRequest(BaseModel):
+    """Return the §3.14 plug program for a wellbore without rendering a PDF.
+
+    `overrides` accepts the same operator-sourced fields as W3APrefillRequest
+    (perf status, GAU date, AOR findings, etc.).
+    """
+    api_number: str
+    overrides: Optional[dict[str, Any]] = None
+
+
+class AttachmentCheckRequest(BaseModel):
+    """Report which required filing attachments are present.
+
+    Set each ``has_*`` flag True once the document has been uploaded /
+    confirmed. ``gau_reference`` is optional but recommended — it is echoed
+    back in the checklist for cross-reference.
+    """
+    api_number: str
+    form_type: str = "w3a"          # "w3a" (intent) or "w3" (plugging record)
+    has_gau_letter: bool = False
+    has_w15_plugging_permit: bool = False
+    has_l1_well_log: bool = False
+    has_p13_affidavit: bool = False
+    gau_reference: Optional[str] = None
+
+
+class PortalFormatRequest(BaseModel):
+    """Convert internal Plugfile values to RRC portal copy-paste strings.
+
+    Returns every field the operator needs to enter into the RRC Online
+    System formatted exactly as the portal expects: fractional casing ODs,
+    integer depth strings, MM/DD/YYYY dates, rounded sack counts.
+    ``overrides`` accepts the same operator-sourced fields as
+    :class:`W3APrefillRequest`.
+    """
+    api_number: str
+    overrides: Optional[dict[str, Any]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +248,131 @@ def generate(req: GenerateRequest):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
+
+
+@app.post("/api/w3a/prefill")
+def w3a_prefill(req: W3APrefillRequest):
+    """Prefill a W-3A (Notice of Intention to Plug) and return it as JSON.
+
+    Populates Boxes 1-16 + casing/perforations from RRC lookups, computes the
+    proposed plug program via the §3.14 engine, and applies operator overrides.
+    No PDF yet — this feeds the 'Intent' wizard; the W-3A PDF export is separate.
+    """
+    try:
+        fetcher = _fetcher()
+        form, conflicts = prefill_w3a(
+            req.api_number, fetcher, operator_overrides=req.overrides
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"W-3A prefill failed: {e}")
+    return {
+        "form": form.to_dict(),
+        "missing_required": sorted(form.missing_required()),
+        "proposed_plug_count": len(form.proposed_plug_record),
+        "rule_paths": form.plug_program_rule_paths,
+        "conflicts": [c.render() for c in conflicts],
+    }
+
+
+@app.post("/api/w3a/generate")
+def w3a_generate(req: W3AGenerateRequest):
+    """Prefill a W-3A and return the filled PDF as a download.
+
+    `paid_tier=true`  → clean FINAL PDF with audit page appended.
+    `paid_tier=false` → single-page PDF with DRAFT watermark.
+    """
+    try:
+        fetcher = _fetcher()
+        form, _ = prefill_w3a(
+            req.api_number, fetcher, operator_overrides=req.overrides
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"W-3A prefill failed: {e}")
+
+    try:
+        pdf_bytes = render_w3a_pdf(form, tier="paid" if req.paid_tier else "free")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"W-3A PDF export failed: {e}")
+
+    tier = "FINAL" if req.paid_tier else "DRAFT"
+    fname = f"W3A_{req.api_number.replace('-', '')}_{tier}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
+@app.post("/api/plug-program")
+def plug_program(req: PlugProgramRequest):
+    """Compute the §3.14 required plug program for a wellbore.
+
+    Returns the full plug list with depths, cement volumes, TAC citations,
+    and a human-readable rationale for each plug — without rendering a PDF.
+    Useful for the PWA "plug preview" step and for standalone validation.
+    """
+    try:
+        fetcher = _fetcher()
+        plan, conflicts = build_plug_plan(
+            req.api_number, fetcher, operator_overrides=req.overrides
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Plug-program computation failed: {e}")
+    return {
+        **plan.to_dict(),
+        "conflicts": [c.render() for c in conflicts],
+    }
+
+
+@app.post("/api/attachments/check")
+def attachments_check(req: AttachmentCheckRequest):
+    """Evaluate required-attachment readiness for a W-3 or W-3A filing.
+
+    Returns a ``ready`` flag plus a per-document checklist. Any missing
+    required documents are listed in ``missing`` so the operator knows
+    exactly what to gather before submitting to the RRC district.
+    """
+    if req.form_type not in ("w3a", "w3"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"form_type must be 'w3a' or 'w3', got {req.form_type!r}",
+        )
+    result = check_attachments(
+        req.api_number,
+        form_type=req.form_type,  # type: ignore[arg-type]
+        has_gau_letter=req.has_gau_letter,
+        has_w15_plugging_permit=req.has_w15_plugging_permit,
+        has_l1_well_log=req.has_l1_well_log,
+        has_p13_affidavit=req.has_p13_affidavit,
+        gau_reference=req.gau_reference,
+    )
+    return result.to_dict()
+
+
+@app.post("/api/portal-format")
+def portal_format_endpoint(req: PortalFormatRequest):
+    """Format well data as portal-ready copy-paste strings.
+
+    Converts internal Plugfile values to the exact formats required by the
+    RRC Online System web portal (casing OD as fractions, depths as integers,
+    dates as MM/DD/YYYY, cement sacks rounded to the nearest whole number).
+
+    Returns a ``ready_to_copy`` flag plus section-by-section dicts the
+    operator can copy field-by-field into the portal.
+    """
+    try:
+        fetcher = _fetcher()
+        result, conflicts = format_for_portal(
+            req.api_number, fetcher, operator_overrides=req.overrides
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=502, detail=f"Portal format failed: {e}"
+        )
+    return {
+        **result.to_dict(),
+        "conflicts": [c.render() for c in conflicts],
+    }
 
 
 # ---------------------------------------------------------------------------

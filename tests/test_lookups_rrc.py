@@ -4,13 +4,13 @@ These tests validate the parser and HTTP plumbing against synthetic HTML
 that mimics RRC's response shape. They DON'T hit the live RRC site:
 
   - `responses` mocks the HTTP layer at the requests level
-  - synthetic HTML in tests/fixtures/rrc_html/ exercises the lxml selectors
-  - the fixtures are calibrated to the XPaths in lookups_rrc._SELECTORS_*
+  - synthetic HTML in tests/fixtures/rrc_html/ exercises the parsers
+  - EWA fixtures are calibrated to the two-step GET → POST flow
 
 If RRC changes their HTML layout, the symptom is that the live CLI returns
 unexpected results. Run `python -m plugfile.lookups_rrc <api> --no-cache`,
-inspect the dumped HTML, and update the selectors. These tests then need
-the fixtures updated to match the new layout.
+inspect the dumped HTML, and update `_parse_ewa_well` / selectors as needed.
+Update the matching fixture HTML to make the offline tests pass again.
 
 The whole module is gated on lxml/requests/responses being installed —
 Phase 1 stdlib-only tests still run if you don't `pip install -e .[dev]`.
@@ -32,8 +32,7 @@ diskcache = pytest.importorskip("diskcache")
 from plugfile.lookups import FetcherError
 from plugfile.lookups_rrc import (
     RRC_CMPL_DETAIL,
-    RRC_CMPL_SEARCH,
-    RRC_PUR_SEARCH,
+    RRC_EWA_WELLBORE,
     RRCRoRQFetcher,
     _format_api,
     _to_float,
@@ -95,9 +94,18 @@ def fetcher(tmp_path):
 
 @responses.activate
 def test_lookup_well_by_api_parses_synthetic_html(fetcher):
+    """Well lookup via EWA: parses positional columns from search-results table."""
+    # Step 1: GET to establish session (returns any HTML — just establishes cookie)
     responses.add(
-        responses.GET, RRC_CMPL_SEARCH,
-        body=_load("well_42-371-30001.html"),
+        responses.GET, RRC_EWA_WELLBORE,
+        body="<html><body>EWA session page</body></html>",
+        content_type="text/html",
+        status=200,
+    )
+    # Step 2: POST returns the actual search results
+    responses.add(
+        responses.POST, RRC_EWA_WELLBORE,
+        body=_load("ewa_wellbore_42-371-30001.html"),
         content_type="text/html",
         status=200,
     )
@@ -108,9 +116,10 @@ def test_lookup_well_by_api_parses_synthetic_html(fetcher):
     assert well["county"] == "Pecos"
     assert well["rrc_district"] == "08"
     assert well["field_name"] == "Spraberry (Trend Area)"
-    assert well["latitude"] == pytest.approx(31.0184)
-    assert well["longitude"] == pytest.approx(-102.5531)
-    assert well["footage_ns"] == "660 FNL"
+    assert well["lease_number"] == "22757"
+    # EWA search results don't include lat/lon — returned as 0.0
+    assert well["latitude"] == 0.0
+    assert well["longitude"] == 0.0
 
 
 @responses.activate
@@ -127,41 +136,33 @@ def test_lookup_well_rejects_short_api(fetcher):
 
 @responses.activate
 def test_lookup_well_raises_on_no_results_page(fetcher):
+    """EWA returning 'No results found' should raise FetcherError."""
     responses.add(
-        responses.GET, RRC_CMPL_SEARCH,
+        responses.GET, RRC_EWA_WELLBORE,
+        body="<html><body>EWA session page</body></html>",
+        content_type="text/html",
+        status=200,
+    )
+    responses.add(
+        responses.POST, RRC_EWA_WELLBORE,
         body=_load("well_not_found.html"),
         content_type="text/html",
         status=200,
     )
-    with pytest.raises(FetcherError, match="no detail page"):
+    with pytest.raises(FetcherError, match="no result"):
         fetcher.lookup_well_by_api("42-371-30001")
 
 
-@responses.activate
-def test_lookup_operator_parses_synthetic_html(fetcher):
-    responses.add(
-        responses.GET, RRC_PUR_SEARCH,
-        body=_load("operator_112233.html"),
-        content_type="text/html",
-        status=200,
-    )
-    op = fetcher.lookup_operator("112233")
-    assert op["operator_name"] == "Apex Permian Operating LLC"
-    assert op["operator_p5_number"] == "112233"
-    assert "Midland" in op["operator_address"]
+def test_lookup_operator_raises_informative_error(fetcher):
+    """PUR endpoint is currently unavailable; fetcher should raise clearly."""
+    with pytest.raises(FetcherError, match="PUR"):
+        fetcher.lookup_operator("112233")
 
 
-@responses.activate
-def test_lookup_operator_pads_p5_to_six_digits(fetcher):
-    responses.add(
-        responses.GET, RRC_PUR_SEARCH,
-        body=_load("operator_112233.html"),
-        content_type="text/html",
-        status=200,
-    )
-    # Pass 5-digit P-5; fetcher should zero-pad
-    op = fetcher.lookup_operator("12233")
-    assert op["operator_p5_number"] == "112233"  # from HTML, not from input
+def test_operator_p5_for_api_raises_informative_error(fetcher):
+    """P-5 resolution depends on the broken CMPL search; should raise clearly."""
+    with pytest.raises(FetcherError, match="P-5"):
+        fetcher.operator_p5_for_api("42-371-30001")
 
 
 def test_lookup_gau_is_not_yet_automated(fetcher):
@@ -187,8 +188,7 @@ def test_lookup_completion_extracts_casing_table(fetcher):
     assert surface["od_in"] == 13.375
     assert surface["set_depth_ft"] == 1800.0
     assert surface["sacks_cemented"] == 1100.0
-    production = next(c for c in comp["casing_record"]
-                      if c["kind"] == "production")
+    production = next(c for c in comp["casing_record"] if c["kind"] == "production")
     assert production["top_of_cement_ft"] == 5000.0
 
 
@@ -213,17 +213,25 @@ def test_lookup_completion_extracts_perforations(fetcher):
 
 @responses.activate
 def test_diskcache_avoids_second_fetch(fetcher):
+    """Second lookup for the same API must come from diskcache (no new HTTP)."""
     responses.add(
-        responses.GET, RRC_CMPL_SEARCH,
-        body=_load("well_42-371-30001.html"),
+        responses.GET, RRC_EWA_WELLBORE,
+        body="<html><body>EWA session page</body></html>",
+        content_type="text/html",
+        status=200,
+    )
+    responses.add(
+        responses.POST, RRC_EWA_WELLBORE,
+        body=_load("ewa_wellbore_42-371-30001.html"),
         content_type="text/html",
         status=200,
     )
     a = fetcher.lookup_well_by_api("42-371-30001")
     b = fetcher.lookup_well_by_api("42-371-30001")
     assert a == b
-    # responses tracks call count; second call must come from cache
-    assert len(responses.calls) == 1
+    # First call: 1 GET (session) + 1 POST (search) = 2 HTTP calls.
+    # Second call: cache hit, 0 HTTP calls.
+    assert len(responses.calls) == 2
 
 
 def test_throttle_enforces_minimum_delay(tmp_path):
@@ -244,14 +252,13 @@ def test_throttle_enforces_minimum_delay(tmp_path):
 
 @responses.activate
 def test_missing_required_field_raises_clear_error(fetcher):
-    """If RRC's HTML changes and a required field disappears, the parser
-    should raise FetcherError with a specific message pointing at the
-    XPath, not silently return garbage."""
+    """If RRC's HTML changes and a required completion field disappears, the
+    parser should raise FetcherError with a message naming the missing field."""
     responses.add(
-        responses.GET, RRC_PUR_SEARCH,
+        responses.GET, RRC_CMPL_DETAIL,
         body="<html><body><p>nothing useful here</p></body></html>",
         content_type="text/html",
         status=200,
     )
-    with pytest.raises(FetcherError, match="operator_name"):
-        fetcher.lookup_operator("112233")
+    with pytest.raises(FetcherError, match="total_depth_ft"):
+        fetcher.lookup_completion("42-371-30001")

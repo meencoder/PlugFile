@@ -31,6 +31,7 @@ Public API
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -333,13 +334,69 @@ def parse_gau_text(text: str) -> GauParseResult:
     )
 
 
+_DOTENV_LOADED = False
+
+
+def _load_dotenv() -> None:
+    """Populate os.environ from a ``.env`` file if one exists.
+
+    Dependency-free loader (no python-dotenv).  Searches, in order:
+      1. each directory from the current working dir up to the filesystem root
+      2. the package's repo root (where ``pyproject.toml`` lives)
+    for a file named ``.env``.  Parses simple ``KEY=VALUE`` lines (``#`` comments
+    and blank lines ignored; surrounding quotes stripped).  Existing environment
+    variables always win — the ``.env`` only *fills gaps* so a real shell var is
+    never overridden.
+
+    Runs at most once per process (idempotent via the ``_DOTENV_LOADED`` flag).
+    """
+    global _DOTENV_LOADED
+    if _DOTENV_LOADED:
+        return
+    _DOTENV_LOADED = True
+
+    candidates: list[Path] = []
+    cwd = Path.cwd()
+    candidates.extend([cwd, *cwd.parents])
+    # repo root relative to this file: src/plugfile/gau_parser.py -> repo root
+    candidates.append(Path(__file__).resolve().parents[2])
+
+    seen: set[Path] = set()
+    for d in candidates:
+        if d in seen:
+            continue
+        seen.add(d)
+        env_path = d / ".env"
+        if not env_path.is_file():
+            continue
+        try:
+            for line in env_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+        except OSError:
+            continue
+        return  # first .env found wins
+
+
 def _pick_ocr_model(client) -> str:  # type: ignore[valid-type]
     """Return the best available Claude model for OCR.
 
+    OCR of GAU letters extracts *safety-critical numbers* (BUQW depth, GAU
+    reference) that land on a regulatory filing.  Accuracy matters more than
+    cost here — a single letter is read once — so we prefer Sonnet over Haiku.
+    Haiku mis-transcribes small/scanned digits (observed: 1550→1650), which is
+    unacceptable for a W-3.
+
     Priority:
       1. ``PLUGFILE_LLM_MODEL`` env var (explicit user override).
-      2. Auto-discover via ``client.models.list()`` — picks the first
-         haiku-class model, then sonnet, then any Claude model.
+      2. Auto-discover via ``client.models.list()`` — prefers a sonnet-class
+         model, then opus, then haiku as a last resort.
          Works with any Anthropic SDK version that exposes the Models API.
       3. Hard-coded fallback (may fail if that model is since deprecated).
     """
@@ -349,10 +406,10 @@ def _pick_ocr_model(client) -> str:  # type: ignore[valid-type]
     if override:
         return override
 
-    # Auto-discover: find the cheapest/fastest currently available model.
+    # Auto-discover: prefer the most accurate model for digit OCR.
     try:
         available_ids = [m.id for m in client.models.list().data]
-        for preference in ("haiku", "sonnet", "claude"):
+        for preference in ("sonnet", "opus", "haiku", "claude"):
             found = next(
                 (mid for mid in available_ids if preference in mid.lower()), None
             )
@@ -361,7 +418,7 @@ def _pick_ocr_model(client) -> str:  # type: ignore[valid-type]
     except Exception:
         pass  # SDK too old or no network — fall through to hardcoded name
 
-    return "claude-haiku-4-5"  # last resort; set PLUGFILE_LLM_MODEL to override
+    return "claude-sonnet-4-6"  # last resort; set PLUGFILE_LLM_MODEL to override
 
 
 def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
@@ -376,22 +433,29 @@ def _ocr_pdf_with_claude(pdf_bytes: bytes) -> str:
 
     Model selection (highest priority first):
       1. ``PLUGFILE_LLM_MODEL`` env var
-      2. Auto-discovered via ``client.models.list()`` (picks fastest available)
-      3. Hardcoded ``claude-haiku-4-5`` as last resort
+      2. Auto-discovered via ``client.models.list()`` (prefers Sonnet for
+         digit accuracy)
+      3. Hardcoded ``claude-sonnet-4-6`` as last resort
 
     The function sends the raw PDF bytes as a base64-encoded document,
     asking Claude to transcribe all visible text.  The returned text is then
     parsed by the normal ``parse_gau_text`` regex pipeline.
+
+    The ``ANTHROPIC_API_KEY`` is read from the process environment, falling
+    back to a ``.env`` file at the repo root (see ``_load_dotenv``) so the
+    feature does not silently break when a shell is started without the var.
     """
     import base64
     import os
 
+    _load_dotenv()  # populate ANTHROPIC_API_KEY from .env if not already set
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
         raise GauParseError(
             "This GAU letter is a scanned image — pypdf extracted 0 characters. "
-            "Set ANTHROPIC_API_KEY to enable automatic OCR, or enter the BUQW "
-            "depth manually in the app."
+            "Set ANTHROPIC_API_KEY (in your environment or a .env file at the "
+            "repo root) to enable automatic OCR, or enter the BUQW depth "
+            "manually in the app."
         )
 
     try:

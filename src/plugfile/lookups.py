@@ -11,9 +11,8 @@ This module defines:
   * `MockFetcher` — Phase 1B implementation seeded from the 5 sample
     wellbore fixtures, extended with realistic operator / GAU / completion
     metadata. Used in tests and the validation runner.
-  * `RRCRoRQFetcher` — documented stub for the real adapter, to be
-    fleshed out in Phase 2 once we wire up the actual RRC public-data
-    endpoints. Today it raises NotImplementedError.
+
+The live RRC adapter (`RRCRoRQFetcher`) lives in `lookups_rrc`.
 
 Returning structured TypedDicts (vs. raw dicts) means schema mismatches
 between the fetcher and the prefill engine fail at import time, not at
@@ -324,7 +323,7 @@ class MockFetcher:
     """In-memory fetcher seeded from the 5 Phase 1A fixtures.
 
     Implements the `Fetcher` Protocol. Use in tests, demos, and CI. For
-    production data you'd swap in `RRCRoRQFetcher` (Phase 2).
+    production data, swap in `RRCRoRQFetcher` from `lookups_rrc`.
     """
 
     @staticmethod
@@ -372,39 +371,3 @@ class MockFetcher:
             raise FetcherError(
                 f"No operator-of-record linkage for API {api_number}"
             )
-
-
-# ---- real-world adapter stub -----------------------------------------------
-
-class RRCRoRQFetcher:
-    """Stub for the real Texas Railroad Commission Online Research Queries
-    adapter. Not implemented in Phase 1B; documented here so the integration
-    path is clear.
-
-    Production wiring (Phase 2) needs:
-      * Auth: RoRQ public queries do not require auth, but rate limits apply.
-      * Endpoint: https://webapps.rrc.texas.gov/CMPL/  (well master)
-                  https://webapps.rrc.texas.gov/PUR/   (P-5 operator)
-                  https://www.rrc.texas.gov/groundwater-advisory-unit/
-                  (GAU letters — usually individual PDFs, not API)
-      * Parser: most RRC public endpoints are HTML/ASPX, not JSON. Real
-                adapter wraps `requests` + a parser (lxml/BeautifulSoup),
-                mapping fields into our TypedDict shapes.
-      * Caching: 24-hour cache layer is reasonable; well-master records
-                rarely change once a well is completed.
-    """
-
-    def lookup_well_by_api(self, api_number: str) -> WellLookupResult:
-        raise NotImplementedError(
-            "RRCRoRQFetcher is a Phase-2 stub. Use MockFetcher for "
-            "Phase 1B tests; implement HTTP+parser layer in Phase 2."
-        )
-
-    def lookup_operator(self, p5_number: str) -> OperatorLookupResult:
-        raise NotImplementedError("RRCRoRQFetcher is a Phase-2 stub.")
-
-    def lookup_gau(self, api_number: str) -> GAULookupResult:
-        raise NotImplementedError("RRCRoRQFetcher is a Phase-2 stub.")
-
-    def lookup_completion(self, api_number: str) -> CompletionRecordResult:
-        raise NotImplementedError("RRCRoRQFetcher is a Phase-2 stub.")
