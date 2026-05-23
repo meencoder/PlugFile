@@ -62,21 +62,23 @@ W3_COORDS: dict[str, FieldCoord] = {
     "api_number":                 FieldCoord(0, 365.0, 693.0, 95.0),
     "rrc_district":               FieldCoord(0, 472.0, 693.0, 60.0, 10.0),
     "field_name":                 FieldCoord(0, 36.0, 638.0, 195.0),
-    "lease_number":               FieldCoord(0, 472.0, 664.0, 90.0),
+    "lease_number":               FieldCoord(0, 472.0, 659.0, 90.0, 8.0),
     "lease_name":                 FieldCoord(0, 268.0, 638.0, 175.0),
     "well_number":                FieldCoord(0, 472.0, 638.0, 50.0),
     "county":                     FieldCoord(0, 472.0, 612.0, 105.0),
     "operator_name":              FieldCoord(0, 36.0, 612.0, 195.0),
     "operator_address":           FieldCoord(0, 36.0, 586.0, 195.0),
-    "footage_ns":                 FieldCoord(0, 268.0, 560.0, 100.0, 8.0),
-    "footage_ew":                 FieldCoord(0, 300.0, 560.0, 100.0, 8.0),
+    # Box 8 footage: values sit in the "___ feet from ... ___ feet from" blanks
+    # on the first printed line (not the "line of the ... lease" line below).
+    "footage_ns":                 FieldCoord(0, 235.0, 578.0, 55.0, 8.0),
+    "footage_ew":                 FieldCoord(0, 382.0, 578.0, 40.0, 8.0),
     "section_block_survey":       FieldCoord(0, 36.0, 533.0, 195.0, 8.0),
     "latitude":                   FieldCoord(0, 268.0, 533.0, 60.0, 8.0),
     "longitude":                  FieldCoord(0, 340.0, 533.0, 60.0, 8.0),
     "total_depth_ft":             FieldCoord(0, 113.0, 511.0, 80.0),
     "spud_date":                  FieldCoord(0, 472.0, 533.0, 90.0),
     "completion_date":            FieldCoord(0, 472.0, 511.0, 90.0),
-    "plugging_date":              FieldCoord(0, 472.0, 490.0, 90.0),
+    "plugging_date":              FieldCoord(0, 472.0, 485.0, 90.0, 8.0),
     "operator_signature_name":    FieldCoord(0, 72.0, 70.0, 200.0),
     "operator_title":             FieldCoord(0, 280.0, 70.0, 85.0),
     "certification_date":         FieldCoord(0, 380.0, 70.0, 70.0),
@@ -323,7 +325,7 @@ def _draw_casing_grid(c: "canvas.Canvas", form: W3Form) -> None:
     for r, cas in enumerate(rows):
         y = CASING_ROW_Y[r]
         set_depth = cas.get("set_depth_ft")
-        c.drawString(CASING_COL_X["size"], y, _fmt_num(cas.get("od_in")))
+        c.drawString(CASING_COL_X["size"], y, _fmt_od(cas.get("od_in")))
         c.drawString(CASING_COL_X["weight"], y, _fmt_num(cas.get("weight_lb_per_ft")))
         c.drawString(CASING_COL_X["put_in"], y, _fmt_num(set_depth))
         c.drawString(CASING_COL_X["left_in"], y, _fmt_num(set_depth))
@@ -628,10 +630,12 @@ W3A_COORDS: dict[str, FieldCoord] = {
     "well_type":                FieldCoord(0, 155.0, 493.0, 40.0, 9.0),
     "completion_type":          FieldCoord(0, 458.0, 490.0, 60.0, 8.0),
     "total_depth_ft":           FieldCoord(0, 480.0, 495.0, 90.0, 9.0),
-    # Box 16 — BUQW / GAU
+    # Box 16 — BUQW / GAU. The form has no dedicated GAU-reference field, so the
+    # letter reference + date go in the empty right half of Box 16's first
+    # printed line (after "...occur to a"), clear of Box 17's printed text.
     "buqw_depth_ft":            FieldCoord(0, 110.0, 463.0, 60.0, 8.0),
-    "gau_letter_reference":     FieldCoord(0, 360.0, 446.0, 180.0, 7.0),
-    "gau_letter_date":          FieldCoord(0, 360.0, 437.0, 180.0, 7.0),
+    "gau_letter_reference":     FieldCoord(0, 356.0, 470.0, 145.0, 6.5),
+    "gau_letter_date":          FieldCoord(0, 505.0, 470.0, 58.0, 6.5),
     # Box 22 — cementer
     "cementing_company":        FieldCoord(0, 48.0, 160.0, 360.0, 8.0),
     "cementer_p5_specialty_code": FieldCoord(0, 430.0, 173.0, 120.0, 8.0),
