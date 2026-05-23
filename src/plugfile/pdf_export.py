@@ -23,7 +23,9 @@ overlay (`plugfile-pdf --calibrate -o calib.pdf`) and re-tune.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from fractions import Fraction
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Iterable, Literal
@@ -503,6 +505,54 @@ def _fmt_num(v: Any) -> str:
     return str(v)
 
 
+def _fmt_od(v: Any) -> str:
+    """Format a casing OD as the fractional string operators write on the form.
+
+    9.625 -> "9 5/8", 5.5 -> "5 1/2", 7.0 -> "7". Avoids the lossy 1-decimal
+    rounding of ``_fmt_num`` (which turned 9.625 into "9.6").
+    """
+    if v is None:
+        return ""
+    try:
+        frac = Fraction(float(v)).limit_denominator(64)
+    except (TypeError, ValueError):
+        return _fmt_num(v)
+    whole = int(frac)
+    rem = frac - whole
+    if rem == 0:
+        return str(whole)
+    if whole == 0:
+        return f"{rem.numerator}/{rem.denominator}"
+    return f"{whole} {rem.numerator}/{rem.denominator}"
+
+
+def _humanize_plug_name(name: str | None) -> str:
+    """Turn an engine plug name into a readable label.
+
+    surface_plug                                -> "Surface plug"
+    buqw_protective_plug                        -> "BUQW protective plug"
+    perforation_Upper Spraberry                 -> "Perforation: Upper Spraberry"
+    production_casing_shoe_seg1_inside_casing   -> "Production casing shoe (seg 1, inside casing)"
+    """
+    n = (name or "plug").strip()
+    seg = ""
+    m = re.search(r"_seg(\d+)_(inside_casing|open_hole|annulus)$", n)
+    if m:
+        seg = f" (seg {m.group(1)}, {m.group(2).replace('_', ' ')})"
+        n = n[: m.start()]
+    # Zone-qualified names use "<label>_<Zone Name>" where the zone may contain
+    # spaces (e.g. "perforation_Upper Spraberry").
+    label_part, sep, zone = n.partition("_")
+    if sep and " " in zone:
+        words = label_part.split("_")
+        rendered = " ".join("BUQW" if w.lower() == "buqw" else w for w in words)
+        head = rendered[:1].upper() + rendered[1:]
+        return f"{head}: {zone}{seg}"
+    words = n.split("_")
+    rendered = " ".join("BUQW" if w.lower() == "buqw" else w for w in words)
+    return (rendered[:1].upper() + rendered[1:]) + seg
+
+
 def _fit_text(s: str, max_width: float, font_size: float) -> str:
     """Truncate `s` so its rendered width fits `max_width` at `font_size`.
 
@@ -597,11 +647,17 @@ W3A_CASING_SIZE_X = 45.0
 W3A_CASING_DEPTH_X = 112.0
 W3A_CASING_SACKS_X = 165.0
 
-# Proposed-plug list (Box 20 area), drawn as compact text rows.
-W3A_PROPOSAL_X = 45.0
-W3A_PROPOSAL_TOP_Y = 300.0
-W3A_PROPOSAL_LINE_H = 10.0
-W3A_PROPOSAL_MIN_Y = 188.0
+# Proposed-plug program → Box 20's numbered rows. Box 20 captures only
+# "No. of sacks" and "Depth in feet (top & bottom)" per plug (no names), so
+# rendering here both places the program in the correct box and avoids leaking
+# the engine's internal plug names onto the form. Row baselines were detected
+# from the blank template (docs/w-3ap.pdf); the named program with TAC cites
+# lives on the paid-tier audit page.
+W3A_PROPOSAL_SACKS_X = 379.0   # centred in the "No. of sacks" column
+W3A_PROPOSAL_DEPTH_X = 428.0   # left of the "Depth in feet (top & bottom)" rule
+W3A_PROPOSAL_ROW_Y: tuple[float, ...] = (
+    260.0, 248.5, 237.0, 225.5, 213.9, 202.4, 189.5, 177.7,
+)
 
 
 def render_w3a_pdf(
@@ -650,7 +706,9 @@ def render_w3a_calibration_overlay(template_path: Path | None = None) -> bytes:
         _crosshair(c, W3A_CASING_SIZE_X, y, f"cas{r+1}.size")
         _crosshair(c, W3A_CASING_DEPTH_X, y, f"cas{r+1}.depth")
         _crosshair(c, W3A_CASING_SACKS_X, y, f"cas{r+1}.sacks")
-    _crosshair(c, W3A_PROPOSAL_X, W3A_PROPOSAL_TOP_Y, "proposal.top")
+    for r, y in enumerate(W3A_PROPOSAL_ROW_Y):
+        _crosshair(c, W3A_PROPOSAL_SACKS_X, y, f"prop{r+1}.sacks")
+        _crosshair(c, W3A_PROPOSAL_DEPTH_X, y, f"prop{r+1}.depth")
     c.showPage()
     c.save()
     overlay = PdfReader(BytesIO(buf.getvalue()))
@@ -694,28 +752,38 @@ def _draw_w3a_casing(c: "canvas.Canvas", form: W3AForm) -> None:
     c.setFont("Helvetica", 8)
     for r, cas in enumerate(rows):
         y = W3A_CASING_ROW_Y[r]
-        c.drawString(W3A_CASING_SIZE_X, y, _fmt_num(cas.get("od_in")))
+        c.drawString(W3A_CASING_SIZE_X, y, _fmt_od(cas.get("od_in")))
         c.drawString(W3A_CASING_DEPTH_X, y, _fmt_num(cas.get("set_depth_ft")))
         c.drawString(W3A_CASING_SACKS_X, y, _fmt_num(cas.get("sacks_cemented")))
 
 
 def _draw_w3a_proposal(c: "canvas.Canvas", form: W3AForm) -> None:
-    """Render the computed proposed plug program as a compact list in Box 20."""
+    """Render the proposed plug program into Box 20's numbered rows.
+
+    Box 20 records only sacks + depth (top & bottom) per plug — no names — so
+    nothing collides with the form's printed Box 19/21 and no internal plug
+    name leaks onto the form. The full named program with TAC citations is on
+    the paid-tier audit page. Plugs beyond the printed rows are flagged as
+    continued on the attached program.
+    """
     plugs = form.proposed_plug_record
     if not plugs:
         return
-    c.setFont("Helvetica", 7)
-    y = W3A_PROPOSAL_TOP_Y
-    for plug in plugs:
-        if y < W3A_PROPOSAL_MIN_Y:
-            break
-        line = (
-            f"{plug.get('name','plug')}: "
-            f"{_fmt_num(plug.get('top_ft'))}-{_fmt_num(plug.get('bottom_ft'))} ft, "
-            f"{_fmt_num(plug.get('volume_sacks'))} sx"
-        )
-        c.drawString(W3A_PROPOSAL_X, y, _fit_text(line, 270.0, 7.0))
-        y -= W3A_PROPOSAL_LINE_H
+    rows = W3A_PROPOSAL_ROW_Y
+    c.setFont("Helvetica", 8)
+    for i, plug in enumerate(plugs[:len(rows)]):
+        y = rows[i]
+        sacks = _fmt_num(plug.get("volume_sacks"))
+        if sacks:
+            c.drawCentredString(W3A_PROPOSAL_SACKS_X, y, sacks)
+        top = _fmt_num(plug.get("top_ft"))
+        bot = _fmt_num(plug.get("bottom_ft"))
+        c.drawString(W3A_PROPOSAL_DEPTH_X, y, f"{top} - {bot}")
+    extra = len(plugs) - len(rows)
+    if extra > 0:
+        c.setFont("Helvetica-Oblique", 6.5)
+        c.drawString(W3A_PROPOSAL_DEPTH_X, rows[-1] - 9.0,
+                     f"+{extra} more — see attached program")
 
 
 def _build_w3a_audit_pages(form: W3AForm) -> bytes:
@@ -753,7 +821,8 @@ def _build_w3a_audit_pages(form: W3AForm) -> bytes:
     y -= 14
     c.setFont("Helvetica", 8)
     for plug in form.proposed_plug_record:
-        line = (f"  {plug.get('name','')}: {_fmt_num(plug.get('top_ft'))}–"
+        line = (f"  {_humanize_plug_name(plug.get('name'))}: "
+                f"{_fmt_num(plug.get('top_ft'))}–"
                 f"{_fmt_num(plug.get('bottom_ft'))} ft  "
                 f"{_fmt_num(plug.get('volume_sacks'))} sacks  "
                 f"({_fmt_num(plug.get('volume_ft3'))} ft³)  cite={plug.get('cite','')}")

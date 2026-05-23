@@ -480,3 +480,7 @@ el('btn-restart').addEventListener('click', () => {
 
 // ---- Boot -----------------------------------------------------------------
 goTo(1);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').catch(console.warn);
+}
