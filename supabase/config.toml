@@ -1,0 +1,16 @@
+# Supabase CLI / GitHub-integration config.
+# Links this repo to the Plugfile Supabase project so the migrations in
+# supabase/migrations/ can be applied (via the GitHub integration on push, or
+# `supabase db push` from the CLI). If you didn't enable branching, this file
+# is harmless — apply 0001_filings.sql manually in the SQL Editor instead.
+project_id = "hrhsaxessfwrjsriflku"
+
+[db]
+# Local dev shadow DB port (only used by the CLI; ignored in the dashboard).
+port = 54322
+major_version = 15
+
+[auth]
+# Email + social sign-in are configured in the dashboard
+# (Authentication -> Providers), not here.
+enabled = true
