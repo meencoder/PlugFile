@@ -516,6 +516,44 @@ el('btn-restart').addEventListener('click', () => {
   goTo(1);
 });
 
+// ---- Save / resume hooks (used by saves.js when signed in) ----------------
+window.toast = toast;
+window.PlugfileWizard = {
+  formType: 'w3a',
+  title: () => `W-3A ${S.apiNumber || 'draft'}`,
+  getState: () => ({
+    api: S.apiNumber, step: S.step,
+    buqwDepth: S.buqwDepth, gauRef: S.gauRef,
+    aorFindings: S.aorFindings,
+    wellType: S.wellType, completionType: S.completionType,
+    cementingCompany: el('cementing-company') ? el('cementing-company').value : S.cementingCompany,
+    attach: S.attach,
+    sigName: el('sig-name') ? el('sig-name').value : '',
+    sigTitle: el('sig-title') ? el('sig-title').value : '',
+    certDate: el('cert-date') ? el('cert-date').value : '',
+  }),
+  restore: (d) => {
+    S.apiNumber = d.api || '';
+    S.buqwDepth = d.buqwDepth ?? null;
+    S.gauRef = d.gauRef ?? null;
+    S.aorFindings = d.aorFindings || [];
+    S.aorGuidanceLoaded = false;
+    S.wellType = d.wellType || 'oil';
+    S.completionType = d.completionType || 'single';
+    S.cementingCompany = d.cementingCompany || null;
+    S.attach = d.attach || { gau: false, w15: false, l1: false, p13: false };
+    S.plugsComputed = false;
+    if (el('api-number')) el('api-number').value = d.api || '';
+    if (el('well-type')) el('well-type').value = S.wellType;
+    if (el('completion-type')) el('completion-type').value = S.completionType;
+    if (el('cementing-company')) el('cementing-company').value = d.cementingCompany || '';
+    if (el('sig-name')) el('sig-name').value = d.sigName || '';
+    if (el('sig-title')) el('sig-title').value = d.sigTitle || 'Operator Representative';
+    if (el('cert-date')) el('cert-date').value = d.certDate || '';
+    goTo(d.step >= 1 && d.step <= 7 ? d.step : 1);
+  },
+};
+
 // ---- Boot -----------------------------------------------------------------
 goTo(1);
 

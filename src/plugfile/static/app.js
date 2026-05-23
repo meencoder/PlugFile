@@ -602,6 +602,38 @@ el('btn-restart').addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Save / resume hooks (used by saves.js when signed in)
+// ---------------------------------------------------------------------------
+window.toast = toast;
+window.PlugfileWizard = {
+  formType: 'w3',
+  title: () => `W-3 ${S.apiNumber || 'draft'}`,
+  getState: () => ({
+    api: S.apiNumber, step: S.step,
+    buqwDepth: S.buqwDepth, gauRef: S.gauRef,
+    transcript: el('transcript').value, narrative: S.narrative,
+    slots: S.slots, warnings: S.warnings,
+    sigName: el('sig-name').value, sigTitle: el('sig-title').value,
+    certDate: el('cert-date').value,
+  }),
+  restore: (d) => {
+    S.apiNumber = d.api || '';
+    S.buqwDepth = d.buqwDepth ?? null;
+    S.gauRef = d.gauRef ?? null;
+    S.narrative = d.narrative || '';
+    S.slots = d.slots || {};
+    S.warnings = d.warnings || [];
+    if (el('api-number')) el('api-number').value = d.api || '';
+    if (el('transcript')) el('transcript').value = d.transcript || '';
+    if (el('sig-name')) el('sig-name').value = d.sigName || '';
+    if (el('sig-title')) el('sig-title').value = d.sigTitle || 'Operator Representative';
+    if (el('cert-date')) el('cert-date').value = d.certDate || '';
+    if (S.slots && Object.keys(S.slots).length) renderReview();
+    goTo(d.step >= 1 && d.step <= 5 ? d.step : 1);
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 goTo(1);

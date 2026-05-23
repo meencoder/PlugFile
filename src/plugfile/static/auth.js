@@ -68,6 +68,10 @@
         b.onclick = () => signIn(b.dataset.p));
     }
     bar.classList.remove('hidden');
+    // Let the save/resume module react to the signed-in state.
+    if (window.PlugfileSaves && window.PlugfileSaves.refresh) {
+      window.PlugfileSaves.refresh();
+    }
   }
 
   async function init() {
@@ -96,6 +100,7 @@
     authHeaders,
     isEnabled: () => S.enabled,
     user: () => S.session && S.session.user,
+    client: () => S.supabase,
     signIn, signOut,
   };
   init();

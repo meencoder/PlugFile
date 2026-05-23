@@ -1,9 +1,10 @@
 /* Plugfile service worker — cache-first for app shell, network-only for API */
-const CACHE = 'plugfile-v3';
+const CACHE = 'plugfile-v4';
 const SHELL = [
   '/', '/app', '/w3a',
-  '/static/app.js', '/static/w3a.js', '/static/auth.js', '/static/style.css',
-  '/static/manifest.json', '/static/icon-192.png', '/static/icon-512.png',
+  '/static/app.js', '/static/w3a.js', '/static/auth.js', '/static/saves.js',
+  '/static/style.css', '/static/manifest.json',
+  '/static/icon-192.png', '/static/icon-512.png',
 ];
 
 self.addEventListener('install', e => {

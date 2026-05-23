@@ -499,6 +499,43 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.5; }
 }
 .auth-btn:hover { border-color: var(--accent); }
 
+/* ---- Save / resume panel ---- */
+.saves-panel {
+  position: fixed;
+  top: 52px;
+  right: 12px;
+  width: min(340px, 92vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  z-index: 50;
+  padding: 6px;
+}
+.saves-loading, .saves-empty {
+  padding: 16px; font-size: 0.85rem; color: var(--muted); text-align: center;
+}
+.saves-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.saves-row:hover { background: rgba(59, 130, 246, 0.1); }
+.saves-meta { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.saves-meta strong { font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.saves-when { font-size: 0.68rem; color: var(--muted); }
+.saves-del {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 0.95rem; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+}
+.saves-del:hover { color: var(--error); background: rgba(239, 68, 68, 0.12); }
+
 /* ---- Helpers ---- */
 .hidden { display: none !important; }
 .sr-only {
