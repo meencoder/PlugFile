@@ -46,6 +46,14 @@ create policy "filings_delete_own" on public.filings
 create index if not exists filings_user_updated_idx
   on public.filings (user_id, updated_at desc);
 
+-- ---- Table-level privileges --------------------------------------------------
+-- RLS controls *which rows* a role may touch, but the role must first hold
+-- table privileges. Tables created via raw SQL don't inherit Supabase's default
+-- grants, so grant CRUD to the authenticated role explicitly (anon gets none —
+-- save/resume requires sign-in). RLS above still restricts each user to their
+-- own rows.
+grant select, insert, update, delete on public.filings to authenticated;
+
 -- ---- keep updated_at current on every update -------------------------------
 create or replace function public.touch_updated_at()
 returns trigger language plpgsql as $$
