@@ -28,6 +28,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from plugfile.aor import assess_aor
 from plugfile.attachments import check_attachments
 from plugfile.gau_parser import GauParseError, parse_gau_pdf, _load_dotenv
 from plugfile.lookups import MockFetcher
@@ -137,6 +138,19 @@ class PortalFormatRequest(BaseModel):
     integer depth strings, MM/DD/YYYY dates, rounded sack counts.
     ``overrides`` accepts the same operator-sourced fields as
     :class:`W3APrefillRequest`.
+    """
+    api_number: str
+    overrides: Optional[dict[str, Any]] = None
+
+
+class AORRequest(BaseModel):
+    """Evaluate the area of review for a wellbore.
+
+    Returns a manual GIS-Viewer review checklist plus, for each nearby-well
+    finding in ``overrides['aor_findings']``, whether it sits inside the
+    ½-mile radius and the §3.14(d)(1) isolation plug it requires (if any).
+    ``overrides`` accepts the same operator-sourced fields as
+    :class:`W3APrefillRequest` — supply ``aor_findings`` to get plug output.
     """
     api_number: str
     overrides: Optional[dict[str, Any]] = None
@@ -371,6 +385,28 @@ def portal_format_endpoint(req: PortalFormatRequest):
         )
     return {
         **result.to_dict(),
+        "conflicts": [c.render() for c in conflicts],
+    }
+
+
+@app.post("/api/aor")
+def aor_endpoint(req: AORRequest):
+    """Evaluate the area of review for a wellbore.
+
+    Returns a step-by-step RRC GIS-Viewer review checklist (the AOR search
+    is a manual, external step — no public spatial API) plus a per-finding
+    assessment: which nearby wells sit inside the ½-mile radius and the
+    §3.14(d)(1) isolation plug each penetrated zone requires.
+    """
+    try:
+        fetcher = _fetcher()
+        assessment, conflicts = assess_aor(
+            req.api_number, fetcher, operator_overrides=req.overrides
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AOR assessment failed: {e}")
+    return {
+        **assessment.to_dict(),
         "conflicts": [c.render() for c in conflicts],
     }
 
