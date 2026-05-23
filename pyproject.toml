@@ -32,6 +32,8 @@ web = [
   "uvicorn[standard]>=0.29",
   "python-multipart>=0.0.9",
   "openpyxl>=3.1",
+  "PyJWT>=2.8",
+  "cryptography>=42",
 ]
 
 [project.scripts]

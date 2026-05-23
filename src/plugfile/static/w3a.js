@@ -396,8 +396,9 @@ el('btn-generate').addEventListener('click', async () => {
       show(el('missing-box'));
     }
 
+    const authH = (window.PlugfileAuth && window.PlugfileAuth.authHeaders()) || {};
     const res = await fetch('/api/w3a/generate', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authH },
       body: JSON.stringify({ api_number: S.apiNumber, overrides: buildOverrides(), paid_tier: false }),
     });
     if (!res.ok) {

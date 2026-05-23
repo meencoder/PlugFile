@@ -23,11 +23,12 @@ import os
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from plugfile.auth import AuthUser, auth_enabled, optional_user, public_config
 from plugfile.aor import assess_aor
 from plugfile.aor_import import parse_download_wells
 from plugfile.attachments import check_attachments
@@ -270,9 +271,25 @@ def narrative(req: NarrativeRequest):
     }
 
 
+def _gate_paid(paid_tier: bool, user: AuthUser) -> None:
+    """Require a signed-in user for paid output when auth is configured.
+
+    In open mode (no provider configured) this is a no-op, so the app keeps
+    working as before. When auth is enabled, the clean/FINAL (paid) PDF
+    requires a logged-in user; the free DRAFT tier stays open to everyone.
+    """
+    if paid_tier and auth_enabled() and not user.is_authenticated:
+        raise HTTPException(
+            status_code=401,
+            detail="Sign in to generate the final (paid) PDF.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 @app.post("/api/generate")
-def generate(req: GenerateRequest):
+def generate(req: GenerateRequest, user: AuthUser = Depends(optional_user)):
     """Assemble a W3Form and return a filled PDF."""
+    _gate_paid(req.paid_tier, user)
     overrides: dict = {
         "operator_signature_name": req.operator_signature_name,
         "operator_title": req.operator_title,
@@ -338,12 +355,13 @@ def w3a_prefill(req: W3APrefillRequest):
 
 
 @app.post("/api/w3a/generate")
-def w3a_generate(req: W3AGenerateRequest):
+def w3a_generate(req: W3AGenerateRequest, user: AuthUser = Depends(optional_user)):
     """Prefill a W-3A and return the filled PDF as a download.
 
     `paid_tier=true`  → clean FINAL PDF with audit page appended.
     `paid_tier=false` → single-page PDF with DRAFT watermark.
     """
+    _gate_paid(req.paid_tier, user)
     try:
         fetcher = _fetcher()
         form, _ = prefill_w3a(
@@ -558,6 +576,23 @@ def handoff_endpoint(req: HandoffRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Handoff evaluation failed: {e}")
     return state.to_dict()
+
+
+@app.get("/api/auth/config")
+def auth_config():
+    """Public auth configuration for the frontend to initialise its SDK.
+
+    Returns only non-secret values (provider label, Supabase URL + anon key
+    when set — both public by design). ``enabled=false`` means the app runs in
+    open mode and the frontend should hide the sign-in UI.
+    """
+    return public_config()
+
+
+@app.get("/api/me")
+def me(user: AuthUser = Depends(optional_user)):
+    """Return the current user (or the anonymous user in open mode)."""
+    return user.to_dict()
 
 
 # ---------------------------------------------------------------------------

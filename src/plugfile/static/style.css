@@ -475,6 +475,30 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.5; }
 }
 .hand-step.here { color: var(--text); background: rgba(59,130,246,0.12); font-weight: 700; }
 
+/* ---- Auth bar (header) ---- */
+.auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+}
+.auth-lbl { color: var(--muted); }
+.auth-email { color: var(--text); font-weight: 600; max-width: 140px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.auth-btn:hover { border-color: var(--accent); }
+
 /* ---- Helpers ---- */
 .hidden { display: none !important; }
 .sr-only {

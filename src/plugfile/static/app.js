@@ -501,9 +501,11 @@ el('btn-generate').addEventListener('click', async () => {
   };
 
   try {
+    const authH = (window.PlugfileAuth && window.PlugfileAuth.authHeaders())
+                  || {};
     const res  = await apiFetch('/api/generate', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authH },
       body:    JSON.stringify(payload),
     });
     const blob = await res.blob();
