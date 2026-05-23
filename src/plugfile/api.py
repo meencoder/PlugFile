@@ -30,8 +30,10 @@ from pydantic import BaseModel
 
 from plugfile.aor import assess_aor
 from plugfile.attachments import check_attachments
+from plugfile.district_office import route_by_api, route_filing
 from plugfile.gau_check import check_gau_acceptability
 from plugfile.gau_parser import GauParseError, parse_gau_pdf, _load_dotenv
+from plugfile.handoff import build_handoff
 from plugfile.lookups import MockFetcher
 from plugfile.narrative import transcript_to_narrative
 from plugfile.pdf_export import render_w3_pdf, render_w3a_pdf
@@ -155,6 +157,36 @@ class AORRequest(BaseModel):
     """
     api_number: str
     overrides: Optional[dict[str, Any]] = None
+
+
+class DistrictOfficeRequest(BaseModel):
+    """Resolve the RRC district office a filing should be delivered to.
+
+    Supply ``api_number`` to resolve the district from an RRC well lookup,
+    or ``rrc_district`` directly (e.g. ``"08"``, ``"7C"``) to skip the lookup.
+    """
+    api_number: Optional[str] = None
+    rrc_district: Optional[str] = None
+
+
+class HandoffRequest(BaseModel):
+    """Evaluate the operator ↔ plugging-company collaboration handoff.
+
+    ``stage`` is one of: ``draft``, ``plugging_company_review``,
+    ``operator_review``, ``submitted_to_district``, ``accepted``. The
+    ``has_*`` / ``operator_certified`` flags gate whether the filing can
+    advance to the next party.
+    """
+    api_number: str
+    stage: str = "draft"
+    form_type: str = "w3"
+    plugging_company: Optional[str] = None
+    has_gau_letter: bool = False
+    has_w15_plugging_permit: bool = False
+    has_l1_well_log: bool = False
+    has_p13_affidavit: bool = False
+    has_plugging_details: bool = False
+    operator_certified: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -425,6 +457,58 @@ def aor_endpoint(req: AORRequest):
         **assessment.to_dict(),
         "conflicts": [c.render() for c in conflicts],
     }
+
+
+@app.post("/api/district-office")
+def district_office_endpoint(req: DistrictOfficeRequest):
+    """Resolve the RRC district office for a filing.
+
+    Pass ``api_number`` (resolves the district via an RRC well lookup) or
+    ``rrc_district`` directly. Returns the office address, phone, fax, and
+    email plus the SWR 14(b)(1) filing note.
+    """
+    if not req.api_number and not req.rrc_district:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide either api_number or rrc_district.",
+        )
+    try:
+        if req.api_number:
+            routing = route_by_api(req.api_number, _fetcher())
+        else:
+            routing = route_filing(rrc_district=req.rrc_district)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"District routing failed: {e}")
+    return routing.to_dict()
+
+
+@app.post("/api/handoff")
+def handoff_endpoint(req: HandoffRequest):
+    """Evaluate the operator ↔ plugging-company collaboration handoff state."""
+    if req.form_type not in ("w3a", "w3"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"form_type must be 'w3a' or 'w3', got {req.form_type!r}",
+        )
+    try:
+        state = build_handoff(
+            req.api_number,
+            _fetcher(),
+            stage=req.stage,
+            form_type=req.form_type,  # type: ignore[arg-type]
+            plugging_company=req.plugging_company,
+            has_gau_letter=req.has_gau_letter,
+            has_w15_plugging_permit=req.has_w15_plugging_permit,
+            has_l1_well_log=req.has_l1_well_log,
+            has_p13_affidavit=req.has_p13_affidavit,
+            has_plugging_details=req.has_plugging_details,
+            operator_certified=req.operator_certified,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Handoff evaluation failed: {e}")
+    return state.to_dict()
 
 
 # ---------------------------------------------------------------------------

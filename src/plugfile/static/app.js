@@ -515,6 +515,7 @@ el('btn-generate').addEventListener('click', async () => {
     el('download-link').href     = S.pdfUrl;
     el('download-link').download = S.pdfFilename;
 
+    loadDistrictOffice();
     goTo(5);
   } catch (e) {
     toast(`PDF generation failed: ${e.message}`);
@@ -523,6 +524,46 @@ el('btn-generate').addEventListener('click', async () => {
     btn.textContent = 'Generate W-3 PDF →';
   }
 });
+
+// Resolve and render the RRC district office this filing goes to.
+async function loadDistrictOffice() {
+  const box = el('district-office');
+  const api = S.apiNumber;
+  if (!api || api === '42-000-00000') { hide(box); return; }
+
+  try {
+    const res = await apiFetch('/api/district-office', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_number: api }),
+    });
+    const r = await res.json();
+    if (!r.matched || !r.office) { hide(box); return; }
+    const o = r.office;
+    const fax = o.fax ? `<div class="result-row"><span class="rlabel">Fax</span><span>${esc(o.fax)}</span></div>` : '';
+    box.innerHTML = `
+      <div class="result-row">
+        <span class="rlabel">File with</span>
+        <span class="hi">${esc(o.name)} District Office</span>
+      </div>
+      <div class="result-row">
+        <span class="rlabel">Address</span>
+        <span>${esc(o.address_line1)}, ${esc(o.city_state_zip)}</span>
+      </div>
+      <div class="result-row">
+        <span class="rlabel">Phone</span>
+        <span>${esc(o.phone)}</span>
+      </div>
+      ${fax}
+      <div class="result-row">
+        <span class="rlabel">Email</span>
+        <span>${esc(o.email)}</span>
+      </div>`;
+    show(box);
+  } catch (e) {
+    hide(box);   // routing is advisory — never block the download
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Step 5 — Start over
@@ -543,6 +584,7 @@ el('btn-restart').addEventListener('click', () => {
   hide(el('gau-verdict'));
   hide(el('manual-buqw-group'));
   hide(el('warn-box'));
+  hide(el('district-office'));
   // Reset AOR helper + step-1 buttons.
   hide(el('aor-panel'));
   hide(el('aor-body'));
