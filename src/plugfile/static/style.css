@@ -114,6 +114,7 @@ label {
 input[type="text"],
 input[type="number"],
 input[type="date"],
+select,
 textarea {
   width: 100%;
   background: var(--card);
@@ -129,7 +130,7 @@ textarea {
   transition: border-color 0.15s;
 }
 
-input:focus, textarea:focus { border-color: var(--accent); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 textarea { resize: vertical; min-height: 130px; line-height: 1.5; }
 
 /* ---- Buttons ---- */
@@ -410,6 +411,69 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.5; }
   font-weight: 600;
   margin-top: 6px;
 }
+
+/* ---- W-3A wizard: logo sub-tag ---- */
+.logo-sub {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent);
+  padding: 2px 6px;
+  border-radius: 5px;
+  vertical-align: middle;
+  margin-left: 4px;
+  letter-spacing: 0.03em;
+}
+
+/* ---- W-3A: proposed plug list ---- */
+.plug-item {
+  background: var(--card);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.plug-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.86rem;
+  font-weight: 700;
+  gap: 10px;
+}
+.plug-depth { color: var(--accent); white-space: nowrap; }
+.plug-meta { font-size: 0.72rem; color: var(--muted); margin-top: 5px; font-weight: 600; }
+
+/* ---- W-3A: attachment toggles ---- */
+.attach-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.attach-item.on  { border-left-color: var(--success); }
+.attach-item.req { border-left-color: var(--warn); }
+.attach-item.opt { opacity: 0.7; }
+.attach-head { display: flex; align-items: center; gap: 9px; font-size: 0.9rem; font-weight: 600; }
+.attach-check { font-size: 1.15rem; }
+.attach-item.on .attach-check { color: var(--success); }
+.attach-name { flex: 1; }
+
+.aor-summary.ready-ok { color: var(--success); border-color: rgba(34,197,94,0.4); }
+
+/* ---- W-3A: handoff flow ---- */
+.hand-flow { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.hand-step {
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+.hand-step.here { color: var(--text); background: rgba(59,130,246,0.12); font-weight: 700; }
 
 /* ---- Helpers ---- */
 .hidden { display: none !important; }

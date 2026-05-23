@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Plugfile W-3A">
+  <link rel="stylesheet" href="/static/style.css">
+  <title>Plugfile — W-3A Notice of Intent</title>
+</head>
+<body>
+
+<header>
+  <div class="logo">Plugfile <span class="logo-sub">W-3A</span></div>
+  <div class="step-bar">
+    <div class="step-pip active" id="pip1"></div>
+    <div class="step-pip" id="pip2"></div>
+    <div class="step-pip" id="pip3"></div>
+    <div class="step-pip" id="pip4"></div>
+    <div class="step-pip" id="pip5"></div>
+    <div class="step-pip" id="pip6"></div>
+    <div class="step-pip" id="pip7"></div>
+    <span class="step-label" id="step-name">Well</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================================================== Step 1: Well -->
+  <section class="step active" data-step="1">
+    <h2>Notice of Intent to Plug</h2>
+    <p class="hint">Form W-3A declares your plug program <em>before</em> plugging. Start with the well's Texas API number.</p>
+
+    <div class="field">
+      <label for="api-number">API Number</label>
+      <input id="api-number" type="text" placeholder="42-XXX-XXXXX"
+             inputmode="numeric" autocomplete="off">
+    </div>
+
+    <div id="well-result" class="result-card hidden"></div>
+
+    <button id="btn-lookup" class="btn-primary">Look up well →</button>
+    <button id="btn-skip-lookup" class="btn-ghost">Continue without lookup</button>
+    <button id="btn-well-continue" class="btn-primary hidden">Continue →</button>
+    <a class="btn-ghost" href="/app" style="margin-top:8px">Switch to W-3 (plugging record)</a>
+  </section>
+
+  <!-- ===================================================== Step 2: GAU -->
+  <section class="step" data-step="2">
+    <h2>GAU letter</h2>
+    <p class="hint">Upload your RRC Groundwater Advisory Unit letter. Plugfile reads the BUQW depth and checks it's acceptable for plugging.</p>
+
+    <label class="upload-area" for="gau-file">
+      <input type="file" id="gau-file" accept=".pdf" class="sr-only">
+      <span class="upload-icon">📄</span>
+      <span class="upload-label" id="gau-upload-label">Tap to upload GAU letter PDF</span>
+    </label>
+
+    <div id="gau-result" class="result-card hidden"></div>
+    <div id="gau-verdict" class="verdict hidden"></div>
+
+    <button id="btn-step2-next" class="btn-primary">Continue →</button>
+    <button id="btn-step2-skip" class="btn-ghost">Skip — use RRC depth on file</button>
+  </section>
+
+  <!-- ===================================================== Step 3: AOR -->
+  <section class="step" data-step="3">
+    <h2>Area of Review</h2>
+    <p class="hint">Required for the W-3A: review the ½-mile area for wells that need isolation. The RRC GIS Viewer is external — follow the steps, then add what you find.</p>
+
+    <div id="aor-guidance" class="checklist"></div>
+
+    <hr class="divider">
+    <h3 class="aor-h3">Add a nearby well of concern</h3>
+    <div class="field-row">
+      <div class="field">
+        <label for="aor-well-id">Well ID / API</label>
+        <input id="aor-well-id" type="text" placeholder="42-XXX-XXXXX">
+      </div>
+      <div class="field">
+        <label for="aor-zone">Zone</label>
+        <input id="aor-zone" type="text" placeholder="e.g. San Andres">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="aor-depth">Zone depth (ft)</label>
+        <input id="aor-depth" type="number" inputmode="decimal" placeholder="e.g. 4200">
+      </div>
+      <div class="field">
+        <label for="aor-distance">Distance (mi)</label>
+        <input id="aor-distance" type="number" inputmode="decimal" placeholder="e.g. 0.3">
+      </div>
+    </div>
+    <button id="btn-aor-add" class="btn-ghost" type="button">+ Add finding</button>
+    <div id="aor-results" class="hidden"></div>
+
+    <button id="btn-step3-next" class="btn-primary">Continue →</button>
+  </section>
+
+  <!-- ===================================================== Step 4: Plugs -->
+  <section class="step" data-step="4">
+    <h2>Proposed plug program</h2>
+    <p class="hint">Plugfile computes the §3.14 plug program from the wellbore. Confirm the well type, then review the proposed plugs.</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="well-type">Well type</label>
+        <select id="well-type">
+          <option value="oil">Oil</option>
+          <option value="gas">Gas</option>
+          <option value="injection">Injection / Disposal</option>
+          <option value="dry">Dry hole</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="completion-type">Completion</label>
+        <select id="completion-type">
+          <option value="vertical">Vertical</option>
+          <option value="horizontal">Horizontal</option>
+          <option value="directional">Directional</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="btn-compute-plugs" class="btn-ghost" type="button">Compute plug program</button>
+    <div id="plug-summary" class="aor-summary hidden"></div>
+    <div id="plug-list"></div>
+
+    <button id="btn-step4-next" class="btn-primary">Continue →</button>
+  </section>
+
+  <!-- ================================================ Step 5: Attachments -->
+  <section class="step" data-step="5">
+    <h2>Required attachments</h2>
+    <p class="hint">A W-3A needs all four before the district will review it. Tap each one you have ready.</p>
+
+    <div id="attach-list"></div>
+    <div id="attach-summary" class="aor-summary hidden"></div>
+
+    <button id="btn-step5-next" class="btn-primary">Continue →</button>
+  </section>
+
+  <!-- ===================================================== Step 6: Sign -->
+  <section class="step" data-step="6">
+    <h2>Sign &amp; generate</h2>
+    <p class="hint">Add the certifying official and (optionally) the plugging company, then generate the W-3A.</p>
+
+    <div class="field">
+      <label for="cementing-company">Plugging / cementing company (optional)</label>
+      <input id="cementing-company" type="text" placeholder="e.g. Permian Plugging Services LLC">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="sig-name">Certifying official</label>
+        <input id="sig-name" type="text" placeholder="Full name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="sig-title">Title</label>
+        <input id="sig-title" type="text" value="Operator Representative">
+      </div>
+    </div>
+    <div class="field">
+      <label for="cert-date">Certification date</label>
+      <input id="cert-date" type="date">
+    </div>
+
+    <div id="missing-box" class="warn-box hidden"></div>
+
+    <button id="btn-generate" class="btn-primary">Generate W-3A →</button>
+  </section>
+
+  <!-- ================================================= Step 7: Package -->
+  <section class="step" data-step="7">
+    <h2>Your W-3A is ready</h2>
+    <p class="hint">Download the PDF, then use the filing package below to submit through the RRC Online System.</p>
+
+    <a id="download-link" class="btn-download" href="#" download>⬇ Download W-3A PDF</a>
+
+    <h3 class="aor-h3">Where to file</h3>
+    <div id="district-office" class="result-card hidden"></div>
+
+    <h3 class="aor-h3">Filing workflow</h3>
+    <div id="handoff-box" class="result-card hidden"></div>
+
+    <h3 class="aor-h3">Portal copy-paste values</h3>
+    <div id="portal-box" class="result-card hidden"></div>
+
+    <button id="btn-restart" class="btn-ghost" style="margin-top:24px">Start a new W-3A</button>
+  </section>
+
+</main>
+
+<script src="/static/w3a.js"></script>
+</body>
+</html>

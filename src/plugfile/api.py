@@ -531,6 +531,18 @@ def spa():
     }
 
 
+@app.get("/w3a", include_in_schema=False)
+def w3a_spa():
+    """Serve the W-3A 'Notice of Intent to Plug' wizard (pre-plugging flow)."""
+    if _STATIC.exists():
+        return FileResponse(_STATIC / "w3a.html")
+    return {
+        "status": "Plugfile API running",
+        "docs": "/docs",
+        "note": "W-3A frontend not found — run from the repo root or install the package.",
+    }
+
+
 # ---------------------------------------------------------------------------
 # CLI entry point  (plugfile-serve)
 # ---------------------------------------------------------------------------
