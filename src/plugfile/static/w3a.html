@@ -74,7 +74,17 @@
     <div id="aor-guidance" class="checklist"></div>
 
     <hr class="divider">
-    <h3 class="aor-h3">Add a nearby well of concern</h3>
+    <h3 class="aor-h3">Fast path: import the GIS export</h3>
+    <p class="hint">In the GIS Viewer use <strong>Download Wells</strong> (½-mi radius) → Export, then drop the file here. Plugfile computes each well's distance and the isolation plugs automatically.</p>
+    <label class="upload-area" for="aor-file">
+      <input type="file" id="aor-file" accept=".csv,.xlsx" class="sr-only">
+      <span class="upload-icon">📥</span>
+      <span class="upload-label" id="aor-upload-label">Import "Download Wells" export (.csv / .xlsx)</span>
+    </label>
+    <div id="aor-import-summary" class="aor-summary hidden"></div>
+
+    <hr class="divider">
+    <h3 class="aor-h3">Or add a nearby well of concern manually</h3>
     <div class="field-row">
       <div class="field">
         <label for="aor-well-id">Well ID / API</label>

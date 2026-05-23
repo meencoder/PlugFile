@@ -29,6 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from plugfile.aor import assess_aor
+from plugfile.aor_import import parse_download_wells
 from plugfile.attachments import check_attachments
 from plugfile.district_office import route_by_api, route_filing
 from plugfile.gau_check import check_gau_acceptability
@@ -455,6 +456,54 @@ def aor_endpoint(req: AORRequest):
         raise HTTPException(status_code=502, detail=f"AOR assessment failed: {e}")
     return {
         **assessment.to_dict(),
+        "conflicts": [c.render() for c in conflicts],
+    }
+
+
+@app.post("/api/aor/import")
+async def aor_import_endpoint(
+    file: UploadFile = File(...),
+    api_number: str = Form(...),
+):
+    """Import a GIS Viewer 'Download Wells' export and evaluate the AOR.
+
+    Parses the uploaded CSV/XLSX, computes each nearby well's distance +
+    direction from the subject well (looked up via RRC), drops plugged and
+    out-of-radius wells, then runs the §3.14 area-of-review assessment on the
+    imported findings — returning the same shape as ``/api/aor`` plus an
+    ``import`` summary.
+    """
+    name = (file.filename or "").lower()
+    if not (name.endswith(".csv") or name.endswith(".xlsx")):
+        raise HTTPException(
+            status_code=400, detail="Upload the GIS export as a .csv or .xlsx file."
+        )
+    raw = await file.read()
+    try:
+        fetcher = _fetcher()
+        well = fetcher.lookup_well_by_api(api_number)
+        try:
+            comp = fetcher.lookup_completion(api_number)
+            td = comp.get("total_depth_ft") if isinstance(comp, dict) else None
+        except Exception:
+            td = None
+        imp = parse_download_wells(
+            raw,
+            filename=file.filename or "",
+            subject_lat=well.get("latitude") if isinstance(well, dict) else None,
+            subject_lon=well.get("longitude") if isinstance(well, dict) else None,
+            subject_td_ft=td,
+            subject_api=api_number,
+        )
+        assessment, conflicts = assess_aor(
+            api_number, fetcher,
+            operator_overrides={"aor_findings": imp.findings} if imp.findings else None,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AOR import failed: {e}")
+    return {
+        **assessment.to_dict(),
+        "import": imp.to_dict(),
         "conflicts": [c.render() for c in conflicts],
     }
 

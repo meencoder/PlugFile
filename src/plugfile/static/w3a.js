@@ -187,6 +187,42 @@ el('btn-step2-skip').addEventListener('click', () => goTo(3));
 // ===========================================================================
 async function ensureAor() { if (!S.aorGuidanceLoaded) loadAor(); }
 
+// Fast path: import the GIS Viewer "Download Wells" export.
+el('aor-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const api = S.apiNumber || el('api-number').value.trim();
+  if (!api || api === '42-000-00000') { toast('Look up a real well first.'); return; }
+  const lbl = el('aor-upload-label');
+  lbl.textContent = `Importing ${file.name}…`;
+  const form = new FormData();
+  form.append('file', file);
+  form.append('api_number', api);
+  try {
+    const res = await fetch('/api/aor/import', { method: 'POST', body: form });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+    const d = await res.json();
+    S.aorFindings = (d.import && d.import.findings) || [];
+    S.aorGuidanceLoaded = true;
+    S.plugsComputed = false;   // findings changed → recompute the plug program
+    const s = d.import.summary;
+    const box = el('aor-import-summary');
+    box.innerHTML = `Imported ${s.total_rows} well(s): <strong>${s.of_concern}</strong> of concern · `
+      + `${s.plugged_skipped} plugged (skipped) · ${s.out_of_radius} outside ${s.radius_mi} mi`
+      + (s.distances_computed ? '' : ' · distances not computed (no subject coordinates)');
+    show(box);
+    renderAorGuidance(d.review_guidance || []);
+    renderAorResults(d);
+    lbl.textContent = file.name + ' ✓';
+  } catch (err) {
+    toast(`Import failed: ${err.message}`);
+    lbl.textContent = 'Import "Download Wells" export (.csv / .xlsx)';
+  }
+});
+
 el('btn-aor-add').addEventListener('click', () => {
   const wellId = el('aor-well-id').value.trim();
   const zone = el('aor-zone').value.trim();
@@ -470,9 +506,10 @@ el('btn-restart').addEventListener('click', () => {
   ['api-number', 'aor-well-id', 'aor-zone', 'aor-depth', 'aor-distance',
    'cementing-company', 'sig-name', 'cert-date'].forEach(id => { if (el(id)) el(id).value = ''; });
   el('gau-upload-label').textContent = 'Tap to upload GAU letter PDF';
-  ['well-result', 'gau-result', 'gau-verdict', 'aor-results', 'plug-summary',
-   'attach-summary', 'missing-box', 'district-office', 'handoff-box', 'portal-box']
+  ['well-result', 'gau-result', 'gau-verdict', 'aor-results', 'aor-import-summary',
+   'plug-summary', 'attach-summary', 'missing-box', 'district-office', 'handoff-box', 'portal-box']
     .forEach(id => hide(el(id)));
+  if (el('aor-upload-label')) el('aor-upload-label').textContent = 'Import "Download Wells" export (.csv / .xlsx)';
   ['aor-guidance', 'plug-list', 'attach-list'].forEach(id => { el(id).innerHTML = ''; });
   show(el('btn-lookup')); show(el('btn-skip-lookup')); hide(el('btn-well-continue'));
   goTo(1);
