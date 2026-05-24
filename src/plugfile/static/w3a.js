@@ -384,48 +384,73 @@ el('btn-step5-next').addEventListener('click', () => goTo(6));
 // ===========================================================================
 // Step 6 — Sign & generate
 // ===========================================================================
-el('btn-generate').addEventListener('click', async () => {
+// Build the W-3A PDF from current state and wire the download link to it.
+// Returns true on success. Shared by the Step-6 "Generate" button and the
+// Step-7 download link (which regenerates on demand — see below).
+async function generatePdf() {
   S.cementingCompany = el('cementing-company').value.trim() || null;
   S.sigName  = el('sig-name').value.trim();
   S.sigTitle = el('sig-title').value.trim() || 'Operator Representative';
   S.certDate = el('cert-date').value;
-  if (!S.sigName)  { toast('Enter the certifying official\'s name.'); return; }
-  if (!S.certDate) { toast('Enter the certification date.'); return; }
+  if (!S.sigName)  { toast('Enter the certifying official\'s name.'); return false; }
+  if (!S.certDate) { toast('Enter the certification date.'); return false; }
 
+  hide(el('missing-box'));
+  // Surface any still-missing required fields (advisory).
+  const pf = await apiJson('/api/w3a/prefill', { api_number: S.apiNumber, overrides: buildOverrides() });
+  if (pf.missing_required && pf.missing_required.length) {
+    el('missing-box').innerHTML = pf.missing_required
+      .map(m => `<div class="warn-item">⚠ Still missing: ${esc(m)}</div>`).join('');
+    show(el('missing-box'));
+  }
+
+  const authH = (window.PlugfileAuth && window.PlugfileAuth.authHeaders()) || {};
+  const res = await fetch('/api/w3a/generate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...authH },
+    body: JSON.stringify({ api_number: S.apiNumber, overrides: buildOverrides(), paid_tier: false }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || res.statusText);
+  }
+  const blob = await res.blob();
+  if (S.pdfUrl) URL.revokeObjectURL(S.pdfUrl);
+  S.pdfUrl = URL.createObjectURL(blob);
+  S.pdfFilename = `W3A_${(S.apiNumber || '').replace(/-/g, '')}_DRAFT.pdf`;
+  el('download-link').href = S.pdfUrl;
+  el('download-link').download = S.pdfFilename;
+  return true;
+}
+
+el('btn-generate').addEventListener('click', async () => {
   const btn = el('btn-generate');
   btn.disabled = true; btn.textContent = 'Generating…';
-  hide(el('missing-box'));
   try {
-    // Surface any still-missing required fields (advisory).
-    const pf = await apiJson('/api/w3a/prefill', { api_number: S.apiNumber, overrides: buildOverrides() });
-    if (pf.missing_required && pf.missing_required.length) {
-      el('missing-box').innerHTML = pf.missing_required
-        .map(m => `<div class="warn-item">⚠ Still missing: ${esc(m)}</div>`).join('');
-      show(el('missing-box'));
-    }
-
-    const authH = (window.PlugfileAuth && window.PlugfileAuth.authHeaders()) || {};
-    const res = await fetch('/api/w3a/generate', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...authH },
-      body: JSON.stringify({ api_number: S.apiNumber, overrides: buildOverrides(), paid_tier: false }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || res.statusText);
-    }
-    const blob = await res.blob();
-    if (S.pdfUrl) URL.revokeObjectURL(S.pdfUrl);
-    S.pdfUrl = URL.createObjectURL(blob);
-    S.pdfFilename = `W3A_${(S.apiNumber || '').replace(/-/g, '')}_DRAFT.pdf`;
-    el('download-link').href = S.pdfUrl;
-    el('download-link').download = S.pdfFilename;
-
-    loadPackage();
-    goTo(7);
+    if (await generatePdf()) { loadPackage(); goTo(7); }
   } catch (e) {
     toast(`W-3A generation failed: ${e.message}`);
   } finally {
     btn.disabled = false; btn.textContent = 'Generate W-3A →';
+  }
+});
+
+// Resuming a saved filing jumps straight to the package step (Step 7) without
+// generating a PDF, so the link's href is still "#". Without this guard a
+// click would download the page's own HTML. Generate on demand first, then
+// let the (now real) blob download proceed.
+el('download-link').addEventListener('click', async (e) => {
+  if (S.pdfUrl) return;                 // real PDF already in memory — download it
+  if (!S.apiNumber) return;             // nothing to generate from
+  e.preventDefault();
+  const a = el('download-link');
+  const label = a.textContent;
+  a.textContent = 'Generating…';
+  try {
+    if (await generatePdf()) a.click(); // re-fire now that href is a blob URL
+  } catch (err) {
+    toast(`W-3A generation failed: ${err.message}`);
+  } finally {
+    a.textContent = label;
   }
 });
 

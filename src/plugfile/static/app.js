@@ -479,18 +479,17 @@ function renderReview() {
   }
 }
 
-el('btn-generate').addEventListener('click', async () => {
+// Build the W-3 PDF from current state and wire the download link to it.
+// Returns true on success. Shared by the Step-4 "Generate" button and the
+// Step-5 download link (which regenerates on demand — see below).
+async function generatePdf() {
   const sigName  = el('sig-name').value.trim();
   const sigTitle = el('sig-title').value.trim() || 'Operator Representative';
   const certDate = el('cert-date').value;
   const plugDate = S.slots.date_of_work || certDate;
 
-  if (!sigName)  { toast('Enter your name before generating.'); return; }
-  if (!certDate) { toast('Enter the certification date.'); return; }
-
-  const btn = el('btn-generate');
-  btn.disabled = true;
-  btn.textContent = 'Generating PDF…';
+  if (!sigName)  { toast('Enter your name before generating.'); return false; }
+  if (!certDate) { toast('Enter the certification date.'); return false; }
 
   const payload = {
     api_number:               S.apiNumber || '42-000-00000',
@@ -504,30 +503,53 @@ el('btn-generate').addEventListener('click', async () => {
     paid_tier:                false,
   };
 
+  const authH = (window.PlugfileAuth && window.PlugfileAuth.authHeaders()) || {};
+  const res  = await apiFetch('/api/generate', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', ...authH },
+    body:    JSON.stringify(payload),
+  });
+  const blob = await res.blob();
+
+  if (S.pdfUrl) URL.revokeObjectURL(S.pdfUrl);
+  S.pdfUrl      = URL.createObjectURL(blob);
+  S.pdfFilename = `W3_${(S.apiNumber || '').replace(/-/g, '')}_DRAFT.pdf`;
+  el('download-link').href     = S.pdfUrl;
+  el('download-link').download = S.pdfFilename;
+  return true;
+}
+
+el('btn-generate').addEventListener('click', async () => {
+  const btn = el('btn-generate');
+  btn.disabled = true;
+  btn.textContent = 'Generating PDF…';
   try {
-    const authH = (window.PlugfileAuth && window.PlugfileAuth.authHeaders())
-                  || {};
-    const res  = await apiFetch('/api/generate', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', ...authH },
-      body:    JSON.stringify(payload),
-    });
-    const blob = await res.blob();
-
-    if (S.pdfUrl) URL.revokeObjectURL(S.pdfUrl);
-    S.pdfUrl      = URL.createObjectURL(blob);
-    S.pdfFilename = `W3_${S.apiNumber.replace(/-/g, '')}_DRAFT.pdf`;
-
-    el('download-link').href     = S.pdfUrl;
-    el('download-link').download = S.pdfFilename;
-
-    loadDistrictOffice();
-    goTo(5);
+    if (await generatePdf()) { loadDistrictOffice(); goTo(5); }
   } catch (e) {
     toast(`PDF generation failed: ${e.message}`);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Generate W-3 PDF →';
+  }
+});
+
+// Resuming a saved filing jumps straight to the package step (Step 5) without
+// generating a PDF, so the link's href is still "#". Without this guard a
+// click would download the page's own HTML. Generate on demand first, then
+// let the (now real) blob download proceed.
+el('download-link').addEventListener('click', async (e) => {
+  if (S.pdfUrl) return;                 // real PDF already in memory — download it
+  if (!S.apiNumber) return;             // nothing to generate from
+  e.preventDefault();
+  const a = el('download-link');
+  const label = a.textContent;
+  a.textContent = 'Generating…';
+  try {
+    if (await generatePdf()) a.click(); // re-fire now that href is a blob URL
+  } catch (err) {
+    toast(`PDF generation failed: ${err.message}`);
+  } finally {
+    a.textContent = label;
   }
 });
 
