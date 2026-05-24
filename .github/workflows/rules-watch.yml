@@ -1,0 +1,88 @@
+name: RRC rules-watch
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"        # Mondays 13:00 UTC — change as you like
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[web]"
+
+      - name: Seed baseline if missing
+        run: |
+          if [ ! -f rules_snapshots.json ]; then
+            plugfile-rules-watch --seed --store rules_snapshots.json
+          fi
+
+      - name: Check for rule/form changes
+        id: watch
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          plugfile-rules-watch --suggest --store rules_snapshots.json \
+            --report rules_report.json --json > rules_report_pretty.json || true
+          CHANGED=$(python -c "import json;print(json.load(open('rules_report.json'))['summary']['changed'])")
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+          {
+            echo "## RRC rules-watch"
+            python - <<'PY'
+          import json
+          r = json.load(open("rules_report.json"))
+          s = r["summary"]
+          print(f"- **{s['changed']} changed**, {s['errors']} error(s), {s['total']} target(s)")
+          for c in r["changes"]:
+              if c["change_type"] in ("changed", "new", "error"):
+                  print(f"  - `{c['change_type']}` **{c['label']}** — {c['url']}")
+          if r.get("suggestions"):
+              print("\n<details><summary>Suggestions</summary>\n\n```\n" + r["suggestions"][:5000] + "\n```\n</details>")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rules-report
+          path: rules_report.json
+
+      - name: Commit updated snapshot
+        run: |
+          git config user.name "rules-watch-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add rules_snapshots.json
+          git commit -m "chore(rules-watch): update RRC snapshot" || echo "no snapshot change"
+          git push || echo "nothing to push"
+
+      - name: Open an issue when changes are detected
+        if: steps.watch.outputs.changed != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const r = JSON.parse(fs.readFileSync('rules_report.json', 'utf8'));
+            const changed = r.changes.filter(c => ['changed','new'].includes(c.change_type));
+            const body = [
+              `Rules-watch detected **${r.summary.changed}** change(s) on ${r.generated_at}.`,
+              '',
+              ...changed.map(c => `- \`${c.change_type}\` **${c.label}** — ${c.url}\n  - maps to: ${c.category}`),
+              '',
+              '### Suggestions', '```', (r.suggestions || '').slice(0, 5000), '```',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: `RRC rules changed — ${r.summary.changed} update(s) ${r.generated_at.slice(0,10)}`,
+              body, labels: ['rules-watch'],
+            });
