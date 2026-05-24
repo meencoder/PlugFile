@@ -25,6 +25,12 @@ In the dashboard: **SQL Editor → New query**, paste the contents of
 and **Run**. This creates the table plus Row-Level Security so each user only
 sees their own filings.
 
+Then run [`supabase/migrations/0002_filing_shares.sql`](../supabase/migrations/0002_filing_shares.sql)
+the same way — it adds operator→plugging-company **sharing**: an owner can share
+one filing with a plugging company by email (the 🔗 button), and that company
+can view + edit just that filing once they sign in with the matching address.
+RLS still confines everyone else.
+
 ## 3. Enable sign-in providers
 
 **Authentication → Providers**, then enable and configure:

@@ -530,11 +530,20 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.5; }
 .saves-meta { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
 .saves-meta strong { font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .saves-when { font-size: 0.68rem; color: var(--muted); }
-.saves-del {
+.saves-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.saves-del, .saves-act {
   background: transparent; border: none; color: var(--muted);
   font-size: 0.95rem; cursor: pointer; padding: 4px 6px; border-radius: 6px;
 }
 .saves-del:hover { color: var(--error); background: rgba(239, 68, 68, 0.12); }
+.saves-act:hover { color: var(--accent); background: rgba(59, 130, 246, 0.12); }
+.share-badge {
+  font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; padding: 1px 6px; border-radius: 6px; margin-left: 4px;
+  white-space: nowrap;
+}
+.share-badge.in  { color: var(--bg); background: var(--accent); }
+.share-badge.out { color: var(--success); border: 1px solid rgba(34,197,94,0.4); }
 
 /* ---- Rules monitor ---- */
 .rules-diff {

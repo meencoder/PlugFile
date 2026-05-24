@@ -8,6 +8,10 @@
 //     restore(data), title() }. This module reads/writes those.
 //   * Data isolation is enforced by Row-Level Security in Postgres (see
 //     supabase/migrations/0001_filings.sql), not by this client code.
+//   * Sharing: an owner can share one filing with a plugging company by email
+//     (🔗). The sharee can then view + edit that filing — enforced by the
+//     shared RLS policies in 0002_filing_shares.sql. Shared-with-you rows show
+//     a badge and omit the share/delete actions.
 // ===========================================================================
 (function () {
   const ST = { currentId: null };
@@ -21,6 +25,10 @@
       && window.PlugfileAuth.user());
   }
   function wizard() { return window.PlugfileWizard || null; }
+  function myId() {
+    const u = window.PlugfileAuth && window.PlugfileAuth.user && window.PlugfileAuth.user();
+    return u && u.id;
+  }
 
   function note(msg, ok) {
     // Reuse the host page's toast if present, else a minimal fallback.
@@ -90,6 +98,22 @@
     openPanel();   // re-render the list
   }
 
+  // Share / unshare a filing with a plugging company by email (owner only).
+  async function share(id, current, ev) {
+    if (ev) ev.stopPropagation();
+    const c = client(); if (!c) return;
+    const input = window.prompt(
+      'Share this filing with a plugging company — enter their email so they can view and edit it. Leave blank to stop sharing.',
+      current || '');
+    if (input === null) return;                  // cancelled
+    const val = input.trim().toLowerCase() || null;
+    const res = await c.from('filings')
+      .update({ shared_with_email: val }).eq('id', id).select().single();
+    if (res.error) { note('Share failed: ' + res.error.message, false); return; }
+    note(val ? ('Shared with ' + val) : 'Sharing removed.', true);
+    openPanel();
+  }
+
   function bar() { return document.getElementById('saves-bar'); }
   function panel() { return document.getElementById('saves-panel'); }
 
@@ -101,18 +125,29 @@
     p.classList.remove('hidden');
     const rows = await list();
     if (!rows.length) { p.innerHTML = '<div class="saves-empty">No saved filings yet.</div>'; return; }
+    const uid = myId();
     p.innerHTML = rows.map(r => {
       const when = new Date(r.updated_at).toLocaleString();
+      const mine = r.user_id === uid;
+      let badge = '';
+      if (!mine) badge = `<span class="share-badge in">shared with you</span>`;
+      else if (r.shared_with_email) badge = `<span class="share-badge out">shared → ${esc(r.shared_with_email)}</span>`;
+      const actions = mine
+        ? `<button class="saves-act" data-share="${r.id}" data-cur="${esc(r.shared_with_email || '')}" title="Share with a plugging company">🔗</button>`
+          + `<button class="saves-del" data-del="${r.id}" title="Delete">✕</button>`
+        : '';
       return `<div class="saves-row" data-id="${r.id}">
         <div class="saves-meta"><strong>${esc(r.title || r.api_number || 'Filing')}</strong>
-          <span class="saves-when">${esc(when)}</span></div>
-        <button class="saves-del" data-del="${r.id}" title="Delete">✕</button>
+          <span class="saves-when">${esc(when)} ${badge}</span></div>
+        <div class="saves-actions">${actions}</div>
       </div>`;
     }).join('');
     p.querySelectorAll('.saves-row').forEach(el =>
       el.onclick = () => load(el.dataset.id));
     p.querySelectorAll('.saves-del').forEach(el =>
       el.onclick = (e) => remove(el.dataset.del, e));
+    p.querySelectorAll('.saves-act[data-share]').forEach(el =>
+      el.onclick = (e) => share(el.dataset.share, el.dataset.cur, e));
   }
 
   function esc(s) {
