@@ -658,7 +658,7 @@ W3A_COORDS: dict[str, FieldCoord] = {
 W3A_CASING_ROW_Y: tuple[float, ...] = (373.7, 362.8, 350.8, 338.8, 326.8)
 W3A_CASING_SIZE_X = 45.0
 W3A_CASING_DEPTH_X = 112.0
-W3A_CASING_SACKS_X = 165.0
+W3A_CASING_SACKS_X = 188.0   # on the blank AFTER the preprinted "w/" (was 165, which overprinted "w/")
 
 # Proposed-plug program → Box 20's numbered rows. Box 20 captures only
 # "No. of sacks" and "Depth in feet (top & bottom)" per plug (no names), so
