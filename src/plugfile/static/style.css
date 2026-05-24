@@ -1,14 +1,15 @@
 /* Plugfile PWA — mobile-first dark theme */
 :root {
-  --bg:      #0f172a;
-  --card:    #1e293b;
-  --border:  #334155;
-  --accent:  #3b82f6;
+  --bg:      #14191f;  /* brand charcoal */
+  --card:    #1e252e;
+  --border:  #3a4250;
+  --accent:  #d97706;  /* brand orange */
+  --amber:   #fcd34d;  /* brand amber (highlights) */
   --success: #22c55e;
   --warn:    #f59e0b;
   --error:   #ef4444;
-  --text:    #f1f5f9;
-  --muted:   #94a3b8;
+  --text:    #f4f1ea;  /* brand cream */
+  --muted:   #a3a294;
   --radius:  12px;
   --touch:   52px;
 }
@@ -39,10 +40,17 @@ header {
 }
 
 .logo {
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-mark { width: 23px; height: 23px; flex: 0 0 auto; }
+.logo-word {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 .step-bar {
