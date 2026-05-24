@@ -128,7 +128,7 @@ No cell signal    GAU letter?       Look up API #         File in duplicate
 
 # The Demo Flow (What You Show)
 
-Open `plugfile.onrender.com` on your phone — always demo on mobile.
+Open `plugfile.com` on your phone — always demo on mobile.
 
 | Step | What You Do | What You Say |
 |------|------------|-------------|
@@ -251,6 +251,6 @@ Everything else follows from that.
 # Questions?
 
 ## Try the product right now:
-# `plugfile.onrender.com`
+# `plugfile.com`
 
 No download. No login. Works on your phone.

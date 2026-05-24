@@ -252,7 +252,7 @@ RRC does not accept e-filing for the W-3. It must be walked into the District Of
 **Three ways in:**
 
 ### 1. Try the free demo right now
-> `plugfile.onrender.com` — no download, no account
+> `plugfile.com` — no download, no account
 > Run through your next well's W-3 in 5 minutes
 
 ### 2. Book a 20-minute live demo
@@ -268,13 +268,13 @@ RRC does not accept e-filing for the W-3. It must be walked into the District Of
 **Plugfile**
 *Print-ready W-3s from the wellsite.*
 
-`plugfile.onrender.com`
+`plugfile.com`
 
 ---
 
 ## APPENDIX A — Product Screenshots Reference
 
-**For live demos, navigate to:** `https://plugfile.onrender.com`
+**For live demos, navigate to:** `https://plugfile.com`
 
 | Screen | URL / Step | Key talking point |
 |--------|-----------|------------------|

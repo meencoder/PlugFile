@@ -40,7 +40,7 @@ style: |
 
 *The smarter way to file your RRC Plugging Record*
 
-`plugfile.onrender.com`
+`plugfile.com`
 
 ---
 
@@ -102,7 +102,7 @@ Here's what it's actually costing:
 
 # Demo — Step 1: Enter Your API Number
 
-## `plugfile.onrender.com → Step 1`
+## `plugfile.com → Step 1`
 
 Type your well's API number. Plugfile pulls:
 
@@ -121,7 +121,7 @@ Type your well's API number. Plugfile pulls:
 
 # Demo — Step 2: Upload Your GAU Letter
 
-## `plugfile.onrender.com → Step 2`
+## `plugfile.com → Step 2`
 
 Upload your Groundwater Advisory Unit letter.
 
@@ -141,7 +141,7 @@ Extracted in seconds:
 
 # Demo — Step 3: Describe the Work — By Voice
 
-## `plugfile.onrender.com → Step 3`
+## `plugfile.com → Step 3`
 
 Tap the mic. Talk for 60–90 seconds:
 
@@ -155,7 +155,7 @@ No forms. No typing. No remembering which field goes where.
 
 # Demo — Step 4: AI Does the Work
 
-## `plugfile.onrender.com → Step 4`
+## `plugfile.com → Step 4`
 
 Eight fields auto-populated from your voice:
 
@@ -177,7 +177,7 @@ Eight fields auto-populated from your voice:
 
 # Demo — Step 5: Download Your W-3
 
-## `plugfile.onrender.com → Step 5`
+## `plugfile.com → Step 5`
 
 One tap. Your W-3 is pre-filled, formatted, and ready to print.
 
@@ -296,7 +296,7 @@ RRC does not accept e-filing for the W-3. It must be walked into the District Of
 ## Three ways in:
 
 **1. Try the free demo right now — no login**
-`plugfile.onrender.com`
+`plugfile.com`
 Run through your next well's W-3 in 5 minutes
 
 **2. Book a 20-minute live demo**
@@ -315,4 +315,4 @@ Early operators and P&A contractors get founders pricing
 
 ## *Print-ready W-3s from the wellsite.*
 
-`plugfile.onrender.com`
+`plugfile.com`

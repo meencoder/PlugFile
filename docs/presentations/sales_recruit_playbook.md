@@ -113,7 +113,7 @@ Step 5: Download W-3 PDF
 
 **Always demo on mobile — that's the use case.**
 
-Open: `https://plugfile.onrender.com` on your phone
+Open: `https://plugfile.com` on your phone
 
 | Step | What you do | What to say |
 |------|------------|-------------|
