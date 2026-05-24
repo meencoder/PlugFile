@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "targets": {
+    "gau": {
+      "hash": "086f2b4c86b7134b6fd7c5201a5e86e350d30a20f79e9aad2cde63aad0e01f37",
+      "text": "Groundwater Advisory Unit Oil & Gas Critical Infrastructure Pipeline Safety Alternative Fuels Surface Mining Gas Services Hearings Legal Public Engagement Home Oil and Gas Applications and Permits Groundwater Advisory Unit (GAU) The Groundwater Advisory Unit (GAU) provides Groundwater Protection Determinations for surface casing, underground injection and other underground activities. The GAU also processes SWR 101 Severance Tax Applications. If you are an oil or gas operator in Texas, the Railroad Commission of Texas may require you to obtain a Groundwater Protection Determination (Form GW-2), which states the base of usable-quality groundwater and additional isolation zones that should be protected for a well or multiple wells within a specified area. Please note that many of the recommendation letters issued by the GAU are applicable to wells within the area specified, such as a survey section, radius, or lease. If no area is specified, the letter applies to wells within 200 feet of the location coordinates. To save time and expense, consider using the \u201cSearch: All Applications\u201d function of the online GW-1 system to find existing letters that may be applicable to your well. Recommendation letters (GW-2s) are not specific to an Operator, but rather apply to wells in a geographic location. Generally speaking, a GW-2 is valid for a period of 5 years from the date of issue, however, a RRC District Office may accept an older letter or require a more recent letter at their discretion. Note also that many of our letters may be used for several purposes in common, such as those for New Production Well, Plug and Abandon, Recompletion, and Disposal/Injection Well Pressure Test (H-5). GW-2 letters issued for Test on Inactive Well (H-15) fluid level tests may be used for plugging purposes except for those H-15 purpose letters that provide a general deepest groundwater depth over a large area and are expressly limited to that purpose only. These links show how to search for previously issued GW-2 letters and GW-2 examples. Please contact the GAU Unit if you are unsure if an existing letter may be used for your well or purpose. Groundwater Protection Determination Request (Form GW-1) To request a Groundwater Protection Determination, submit the following documents: A Form GW-1. Online filing is the preferred method (RRC Online System) Google Chrome 37.0+ is recommended. Other browsers cause known technical issues. JavaScript must be enabled. Pop-up blocking software must be disabled. Or you may email or mail the completed Interactive gw-1 PDF. A scaled map showing the well location and surrounding survey lines. For an example, go to \"Creating a Scaled Map\" in the list of links in the upper-right hand corner of the page; A copy of the electric log that goes to surface, for plugging, re-entering an existing well, or converting to a water well (Form-P13, Application of Landowner to Condition an Abandoned Well for Fresh Water Production), or filing for an injection well For injection wells, signed and dated Form H-1, Form H-1A (injection into productive-zone) or Form W-14 (Injection into non-productive zone) Application fee (Expedited fee, optional) $250.00 non-expedited $437.50 expeditedAll fees are non-refundable For detailed information regarding the Form GW-1 on the Online System refer to the Groundwater Application User's Guide. The online Groundwater Application will only allow oil and gas operators who have registered with the Railroad Commission of Texas by filing an annual Organization Report (Form P-5). If you are not a registered P-5 operator, you will be required to submit the Form GW-1 using the Interactive PDF format version. For instructions on filing the Form GW-1, follow the link: \u201cInstructions for Completing Form GW-1\u201d in the upper-right of the page. Groundwater Protection Determination (Form GW-2) The Groundwater Advisory Unit (GAU) provides three types of Groundwater Protection Determinations. Groundwater Protection Determination Provides where possible top and bottom of fresh water zones, which is generally less than 1,000 mg/L total dissolved solids (TDS), and The Base of Usable-Quality Water (BUQW), generally 3,000 mg/L TDS or less and other waters known to be used or identified as sources of desalinization water. This type of Groundwater Protection Determination is used for new drills, cathodic protection, re-entry, well integrity test, microseismic boreholes, injection into a producing zone, plug and abandon, and conversion of an oil and gas well to a water well. Groundwater Protection Determination for Saltwater Disposal Wells In addition to freshwater and usable-quality zones\u2026 Provides the base of the Underground Source of Drinking Water (USDW) (less than 10,000 mg/L TDS) and Verifies geologic isolation from the Base of Usable-Quality Water (BUQW) and the Underground Source of Drinking Water (USDW). Groundwater Protection Determination for Seismic Survey Provides a range of depths for the Base of Usable-Quality Water (BUQW) across the seismic survey. Expected Processing Time Frames Groundwater Protection Determinations are intended to be processed in accordance with the following timelines after the application is determined to be administratively complete: Non-expedited letter ($250.00): ten (10) business days, Expedited letter ($437.50): four (4) business days. Save time and money by selecting Areal Extents to cover multiple wells with a single Groundwater Protection Determination. If an application is returned to the operator by Admin/Geologist for additional information or corrections, the estimated processing time starts over. GAU Links Geologic Advisory Unit GAU Payments North Central Texas Area Groundwater Protection Determination Ordering Class VI (CCS) Letters GAU Oil & Gas Waste Disposal Well Letter GAU Determination for a Seismic Survey Creating a Scaled Map Using the RRC Public GIS Viewer Submitting Well Logs Online Instructions for Completing Form GW-1 Researching Groundwater Protection Determinations and Data Surface Casing Estimation Drilling Insight and Casing Estimator (DICE) GAU Underground Injection Control Requirements How the RRC Protects Groundwater UIC Isolation Requirements Interpretation of GW-2 Injection Well Statements (Current Protocol) Interpretation of GW-2 Injection Well Statements (Past Protocol) GAU Videos Groundwater Protection Determination Letter Explanation TAX Incentives SWR 101 Tight Gas Formation Tax Incentives CPA Tax Award Gas ID Query Current Tax Incentives Below is the North Central Texas area of abstracts with letter exemptions. The image links to the North Central Texas Letter Exemptions page where you can view the complete list of abstracts. Commissioners Jim Wright Chairman Christi Craddick Commissioner Wayne Christian Commissioner Research Resource Center Maps - Public GIS Viewer Data - Online Research Queries Data Visualizations Oil & Gas Research and Statistics Rules General Open Meetings Announcements News RRC Locations Divisions & Activities Public Information Act Audiences Consumers Land & Mineral Owners Media & Press",
+      "status": 200,
+      "fetched_at": "2026-05-24T00:47:07Z"
+    }
+  },
+  "last_report": {
+    "generated_at": "2026-05-24T00:47:08Z",
+    "seeded": false,
+    "summary": {
+      "total": 5,
+      "changed": 0,
+      "errors": 4
+    },
+    "changes": [
+      {
+        "key": "plugging_overview",
+        "label": "RRC well plugging overview",
+        "url": "https://www.rrc.texas.gov/oil-and-gas/applications-and-permits/plugging/",
+        "category": "tac_3_14 / plug_plan",
+        "change_type": "error",
+        "old_hash": null,
+        "new_hash": null,
+        "diff": "",
+        "fetched_at": "2026-05-24T00:47:07Z",
+        "error": "HTTP 404"
+      },
+      {
+        "key": "tac_3_14",
+        "label": "16 TAC \u00a73.14 (Plugging) rule text",
+        "url": "https://www.rrc.texas.gov/oil-and-gas/rules/current-oil-and-gas-rules/",
+        "category": "tac_3_14 / plug_plan",
+        "change_type": "error",
+        "old_hash": null,
+        "new_hash": null,
+        "diff": "",
+        "fetched_at": "2026-05-24T00:47:07Z",
+        "error": "HTTP 404"
+      },
+      {
+        "key": "oil_gas_forms",
+        "label": "RRC Oil & Gas forms library (W-3 / W-3A)",
+        "url": "https://www.rrc.texas.gov/about-us/resource-center/forms/oil-gas-forms/",
+        "category": "w3_schema / w3a_schema / pdf_export",
+        "change_type": "error",
+        "old_hash": null,
+        "new_hash": null,
+        "diff": "",
+        "fetched_at": "2026-05-24T00:47:07Z",
+        "error": "HTTP 404"
+      },
+      {
+        "key": "gau",
+        "label": "Groundwater Advisory Unit (GW-2 / BUQW)",
+        "url": "https://www.rrc.texas.gov/oil-and-gas/applications-and-permits/groundwater-advisory-unit/",
+        "category": "gau_parser / gau_check",
+        "change_type": "unchanged",
+        "old_hash": "086f2b4c86b7134b6fd7c5201a5e86e350d30a20f79e9aad2cde63aad0e01f37",
+        "new_hash": "086f2b4c86b7134b6fd7c5201a5e86e350d30a20f79e9aad2cde63aad0e01f37",
+        "diff": "",
+        "fetched_at": "2026-05-24T00:47:07Z",
+        "error": null
+      },
+      {
+        "key": "online_system",
+        "label": "RRC Online System / filing guidance",
+        "url": "https://www.rrc.texas.gov/resource-center/online-services/",
+        "category": "portal_format / api",
+        "change_type": "error",
+        "old_hash": null,
+        "new_hash": null,
+        "diff": "",
+        "fetched_at": "2026-05-24T00:47:07Z",
+        "error": "HTTP 404"
+      }
+    ],
+    "suggestions": "No rule/form changes detected. No action needed."
+  },
+  "saved_at": "2026-05-24T00:47:08Z"
+}
