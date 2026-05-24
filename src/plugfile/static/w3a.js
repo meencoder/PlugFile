@@ -23,6 +23,7 @@ const S = {
   certDate: '',
   pdfUrl: null,
   pdfFilename: '',
+  maxStep: 1,
 };
 
 // ---- DOM helpers ----------------------------------------------------------
@@ -63,10 +64,13 @@ function goTo(n) {
   document.querySelectorAll('.step').forEach(s =>
     s.classList.toggle('active', +s.dataset.step === n));
   S.step = n;
+  S.maxStep = Math.max(S.maxStep || 1, n);
   document.querySelectorAll('.step-pip').forEach((pip, i) => {
     const s = i + 1;
     pip.classList.toggle('done', s < n);
     pip.classList.toggle('active', s === n);
+    pip.classList.toggle('nav', s <= S.maxStep && s !== n);
+    pip.title = (STEP_NAMES[i] || ('Step ' + s)) + (s <= S.maxStep ? '' : ' (locked)');
   });
   el('step-name').textContent = STEP_NAMES[n - 1];
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -503,6 +507,7 @@ el('btn-restart').addEventListener('click', () => {
     completionType: 'single', cementingCompany: null, plugsComputed: false,
     attach: { gau: false, w15: false, l1: false, p13: false },
     sigName: '', sigTitle: 'Operator Representative', certDate: '', pdfUrl: null,
+    maxStep: 1,
   });
   ['api-number', 'aor-well-id', 'aor-zone', 'aor-depth', 'aor-distance',
    'cementing-company', 'sig-name', 'cert-date'].forEach(id => { if (el(id)) el(id).value = ''; });
@@ -555,6 +560,10 @@ window.PlugfileWizard = {
 };
 
 // ---- Boot -----------------------------------------------------------------
+// Clickable step breadcrumb: jump back to any step already reached.
+document.querySelectorAll('.step-pip').forEach((pip, i) => {
+  pip.addEventListener('click', () => { if (i + 1 <= (S.maxStep || 1)) goTo(i + 1); });
+});
 goTo(1);
 
 if ('serviceWorker' in navigator) {

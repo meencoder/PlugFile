@@ -52,14 +52,17 @@ header {
 }
 
 .step-pip {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--border);
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.12s;
 }
 .step-pip.active  { background: var(--accent); }
 .step-pip.done    { background: var(--success); }
+/* Reached steps act as a clickable breadcrumb */
+.step-pip.nav     { cursor: pointer; }
+.step-pip.nav:hover { transform: scale(1.45); background: var(--accent); }
 
 .step-label {
   font-size: 0.72rem;

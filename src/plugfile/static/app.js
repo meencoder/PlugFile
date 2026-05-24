@@ -17,6 +17,7 @@ const S = {
   pdfFilename: '',
   aorFindings: [],
   aorGuidanceLoaded: false,
+  maxStep: 1,
 };
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c =>
@@ -62,12 +63,15 @@ function goTo(n) {
     s.classList.toggle('active', +s.dataset.step === n);
   });
   S.step = n;
-  // Update step pips
+  S.maxStep = Math.max(S.maxStep || 1, n);
+  // Update step pips (clickable breadcrumb back to any step already reached)
   document.querySelectorAll('.step-pip').forEach((pip, i) => {
     const s = i + 1;
     pip.classList.toggle('done',   s < n);
     pip.classList.toggle('active', s === n);
     pip.classList.toggle('future', s > n);
+    pip.classList.toggle('nav', s <= S.maxStep && s !== n);
+    pip.title = (STEP_NAMES[i] || ('Step ' + s)) + (s <= S.maxStep ? '' : ' (locked)');
   });
   el('step-name').textContent = STEP_NAMES[n - 1];
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -576,7 +580,7 @@ el('btn-restart').addEventListener('click', () => {
     step: 1, apiNumber: '', wellData: null,
     buqwDepth: null, gauRef: null, transcript: '',
     narrative: '', slots: {}, warnings: [], pdfUrl: null,
-    aorFindings: [], aorGuidanceLoaded: false,
+    aorFindings: [], aorGuidanceLoaded: false, maxStep: 1,
   });
   el('api-number').value = '';
   el('transcript').value = '';
@@ -636,6 +640,10 @@ window.PlugfileWizard = {
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
+// Clickable step breadcrumb: jump back to any step already reached.
+document.querySelectorAll('.step-pip').forEach((pip, i) => {
+  pip.addEventListener('click', () => { if (i + 1 <= (S.maxStep || 1)) goTo(i + 1); });
+});
 goTo(1);
 
 if ('serviceWorker' in navigator) {
