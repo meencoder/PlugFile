@@ -16,6 +16,25 @@ from __future__ import annotations
 import pytest
 
 
+_AUTH_ENV_VARS = (
+    "PLUGFILE_AUTH_JWKS_URL", "PLUGFILE_AUTH_PROVIDER", "PLUGFILE_AUTH_ISSUER",
+    "PLUGFILE_AUTH_AUDIENCE", "PLUGFILE_SUPABASE_URL", "PLUGFILE_SUPABASE_ANON_KEY",
+)
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_auth_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Start every test in auth "open mode", regardless of any local `.env`.
+
+    `plugfile.api` / `gau_parser` call `_load_dotenv()` at import, which would
+    otherwise leak a developer's real Supabase config into the test process and
+    make open-mode assertions flaky. Tests that want auth enabled opt in via
+    their own `monkeypatch.setenv`.
+    """
+    for var in _AUTH_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--live",

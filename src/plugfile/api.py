@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from plugfile.auth import AuthUser, auth_enabled, optional_user, public_config
+from plugfile.auth import AuthUser, auth_enabled, optional_user, public_config, require_user
 from plugfile.aor import assess_aor
 from plugfile.aor_import import parse_download_wells
 from plugfile.attachments import check_attachments
@@ -576,6 +576,18 @@ def handoff_endpoint(req: HandoffRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Handoff evaluation failed: {e}")
     return state.to_dict()
+
+
+@app.get("/api/rules/status")
+def rules_status(user: AuthUser = Depends(require_user)):
+    """Admin view: latest RRC rules-watch snapshot summary.
+
+    Gated by login when auth is configured (open in dev/open mode). The heavy
+    fetch/diff runs on a schedule via the `plugfile-rules-watch` CLI / GitHub
+    Action; this endpoint just reports the last stored snapshot.
+    """
+    from plugfile.rules_watch import latest_report
+    return latest_report()
 
 
 @app.get("/api/auth/config")
