@@ -639,6 +639,14 @@ def w3a_spa():
     }
 
 
+@app.get("/rules", include_in_schema=False)
+def rules_spa():
+    """Serve the RRC Rules Monitor admin panel (reads /api/rules/status)."""
+    if _STATIC.exists():
+        return FileResponse(_STATIC / "rules.html")
+    return {"status": "Plugfile API running", "note": "Rules panel not found."}
+
+
 # ---------------------------------------------------------------------------
 # CLI entry point  (plugfile-serve)
 # ---------------------------------------------------------------------------

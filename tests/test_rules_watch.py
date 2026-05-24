@@ -153,3 +153,13 @@ def test_latest_report_reads_store(tmp_path):
     lr = latest_report(p)
     assert lr["available"] is True
     assert "a" in lr["targets"]
+
+
+def test_latest_report_surfaces_last_changes(tmp_path):
+    p = tmp_path / "s.json"
+    run_watch(store_path=p, targets=TARGETS, fetcher=make_fetcher({"a": "A1", "b": "B1"}), seed=True)
+    run_watch(store_path=p, targets=TARGETS, fetcher=make_fetcher({"a": "A2", "b": "B1"}))
+    lr = latest_report(p)
+    assert lr["last_report"]["summary"]["changed"] == 1
+    assert any(c["key"] == "a" and c["change_type"] == "changed"
+               for c in lr["last_report"]["changes"])

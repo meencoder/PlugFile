@@ -392,9 +392,12 @@ def run_watch(
     store = SnapshotStore(store_path)
     changes = check_for_changes(targets, store, fetcher=fetcher, seed=seed)
     suggestions = "" if seed else suggest_features(changes, use_llm=use_llm)
-    store.save()
     report = RulesReport(generated_at=_now_iso(), changes=changes,
                          suggestions=suggestions, seeded=seed)
+    # Persist the report alongside the snapshots so the API / admin panel can
+    # surface the latest detected changes + suggestions (not just hashes).
+    store.data["last_report"] = report.to_dict()
+    store.save()
     return report
 
 
@@ -415,6 +418,7 @@ def latest_report(store_path: str | Path | None = None) -> dict[str, Any]:
                 "hash": (v.get("hash") or "")[:12]}
             for k, v in store.data["targets"].items()
         },
+        "last_report": store.data.get("last_report"),
     }
 
 

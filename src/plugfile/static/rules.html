@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e3a5f">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="stylesheet" href="/static/style.css">
+  <title>Plugfile — Rules Monitor</title>
+</head>
+<body>
+
+<header>
+  <div class="logo">Plugfile <span class="logo-sub">Rules</span></div>
+  <div id="auth-bar" class="auth-bar hidden"></div>
+</header>
+
+<main>
+  <h2>RRC Rules Monitor</h2>
+  <p class="hint">Tracks changes to RRC rules and forms (TAC §3.14, the forms library, GAU, the online system). The scheduled job does the heavy diffing and suggestions; this is a read-only view of the latest snapshot. Admin / signed-in only.</p>
+
+  <button id="rules-refresh" class="btn-ghost" type="button">↻ Refresh</button>
+
+  <div id="rules-body" style="margin-top:14px"></div>
+
+  <div style="margin-top:24px">
+    <a class="btn-ghost" href="/app">← W-3 wizard</a>
+    <a class="btn-ghost" href="/w3a">W-3A wizard</a>
+  </div>
+</main>
+
+<script src="/static/auth.js"></script>
+<script src="/static/rules.js"></script>
+</body>
+</html>
