@@ -1,15 +1,18 @@
 /* Plugfile PWA — mobile-first dark theme */
 :root {
-  --bg:      #14191f;  /* brand charcoal */
-  --card:    #1e252e;
-  --border:  #3a4250;
-  --accent:  #d97706;  /* brand orange */
-  --amber:   #fcd34d;  /* brand amber (highlights) */
-  --success: #22c55e;
-  --warn:    #f59e0b;
-  --error:   #ef4444;
-  --text:    #f4f1ea;  /* brand cream */
-  --muted:   #a3a294;
+  /* Muted, warm palette — softened for low glare on the dark UI while
+     keeping clear hierarchy. Bright brand hues are reserved for the logo. */
+  --bg:      #181d24;  /* soft charcoal */
+  --card:    #232a33;
+  --border:  #39424f;
+  --accent:  #dd9a52;  /* muted warm orange (was #d97706) */
+  --amber:   #e6c578;  /* muted gold (was #fcd34d) */
+  --success: #7bbe97;  /* sage green (was #22c55e) */
+  --warn:    #e0a95c;  /* muted amber (was #f59e0b) */
+  --error:   #db8a78;  /* soft coral (was #ef4444) */
+  --on-fill: #1c1206;  /* dark text for use on the light accent fills */
+  --text:    #e8e3d7;  /* soft off-white (was #f4f1ea) */
+  --muted:   #9b988d;
   --radius:  12px;
   --touch:   52px;
 }
@@ -163,11 +166,11 @@ textarea { resize: vertical; min-height: 130px; line-height: 1.5; }
   -webkit-appearance: none;
 }
 
-.btn-primary             { background: var(--accent); color: #fff; }
+.btn-primary             { background: var(--accent); color: var(--on-fill); }
 .btn-primary:disabled    { opacity: 0.4; cursor: not-allowed; }
 .btn-ghost               { background: transparent; color: var(--muted);
                            border: 1px solid var(--border); }
-.btn-download            { background: var(--success); color: #fff;
+.btn-download            { background: var(--success); color: #10241a;
                            font-size: 1.1rem; padding: 18px; margin-bottom: 20px; }
 
 /* ---- Upload area ---- */

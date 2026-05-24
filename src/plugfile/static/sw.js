@@ -1,5 +1,5 @@
 /* Plugfile service worker — cache-first for app shell, network-only for API */
-const CACHE = 'plugfile-v11';
+const CACHE = 'plugfile-v12';
 const SHELL = [
   '/', '/app', '/w3a', '/rules',
   '/static/app.js', '/static/w3a.js', '/static/auth.js', '/static/saves.js',
