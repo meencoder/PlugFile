@@ -59,22 +59,25 @@ class WatchTarget:
 # RRC restructures its site periodically — confirm/adjust these URLs. The agent
 # tolerates 404s (records an error, keeps going), so a stale URL never crashes
 # a run; it just surfaces as an "error" change you can fix.
+# NOTE: the Texas Administrative Code (texreg.sos.state.tx.us) was retired and
+# moved to a JavaScript Appian portal that isn't text-diffable, so we can't
+# watch the §3.14 rule text directly. Instead we watch the RRC's own
+# server-rendered pages — the current-rules / rulemaking page is the real
+# early-warning for a §3.14 change. All URLs confirmed HTTP 200 (verify
+# periodically; the agent records a fetch failure rather than crashing).
 WATCH_TARGETS: tuple[WatchTarget, ...] = (
-    WatchTarget("plugging_overview", "RRC well plugging overview",
-                "https://www.rrc.texas.gov/oil-and-gas/applications-and-permits/plugging/",
-                "tac_3_14 / plug_plan", "html"),
-    WatchTarget("tac_3_14", "16 TAC §3.14 (Plugging) rule text",
-                "https://www.rrc.texas.gov/oil-and-gas/rules/current-oil-and-gas-rules/",
-                "tac_3_14 / plug_plan", "html"),
+    WatchTarget("current_rules", "RRC current rules & rulemaking (§3.14 early-warning)",
+                "https://www.rrc.texas.gov/general-counsel/rules/current-rules/",
+                "tac_3_14 / plug_plan / aor", "html"),
     WatchTarget("oil_gas_forms", "RRC Oil & Gas forms library (W-3 / W-3A)",
-                "https://www.rrc.texas.gov/about-us/resource-center/forms/oil-gas-forms/",
+                "https://www.rrc.texas.gov/oil-and-gas/oil-and-gas-forms/",
                 "w3_schema / w3a_schema / pdf_export", "html"),
+    WatchTarget("plugging_permits", "RRC oil & gas applications & permits (plugging)",
+                "https://www.rrc.texas.gov/oil-and-gas/applications-and-permits/",
+                "tac_3_14 / plug_plan / attachments", "html"),
     WatchTarget("gau", "Groundwater Advisory Unit (GW-2 / BUQW)",
                 "https://www.rrc.texas.gov/oil-and-gas/applications-and-permits/groundwater-advisory-unit/",
                 "gau_parser / gau_check", "html"),
-    WatchTarget("online_system", "RRC Online System / filing guidance",
-                "https://www.rrc.texas.gov/resource-center/online-services/",
-                "portal_format / api", "html"),
 )
 
 # category fragment -> PlugFile modules likely affected (used for no-LLM hints)
