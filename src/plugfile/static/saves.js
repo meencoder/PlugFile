@@ -84,8 +84,13 @@
     const res = await c.from('filings').select('*').eq('id', id).single();
     if (res.error) { note('Load failed: ' + res.error.message, false); return; }
     ST.currentId = res.data.id;
-    try { w.restore(res.data.data || {}); note('Filing loaded.', true); }
-    catch (e) { note('Could not restore: ' + (e.message || e), false); }
+    try {
+      w.restore(res.data.data || {});
+      // Tell the wizard who this filing is shared with so the handoff stage
+      // and W-3A Box 22 (plugging company) reflect it. Optional hook.
+      if (typeof w.setSharedWith === 'function') w.setSharedWith(res.data.shared_with_email || null);
+      note('Filing loaded.', true);
+    } catch (e) { note('Could not restore: ' + (e.message || e), false); }
     closePanel();
   }
 
@@ -110,6 +115,10 @@
     const res = await c.from('filings')
       .update({ shared_with_email: val }).eq('id', id).select().single();
     if (res.error) { note('Share failed: ' + res.error.message, false); return; }
+    // If the filing being shared is the one currently open in the wizard,
+    // reflect it immediately (handoff → "Plugging company review", Box 22).
+    const w = wizard();
+    if (id === ST.currentId && w && typeof w.setSharedWith === 'function') w.setSharedWith(val);
     note(val ? ('Shared with ' + val) : 'Sharing removed.', true);
     openPanel();
   }

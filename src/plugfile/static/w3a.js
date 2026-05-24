@@ -16,6 +16,7 @@ const S = {
   wellType: 'oil',
   completionType: 'single',
   cementingCompany: null,
+  sharedWith: null,        // plugging-company email this filing was shared with
   plugsComputed: false,
   attach: { gau: false, w15: false, l1: false, p13: false },
   sigName: '',
@@ -86,7 +87,10 @@ function goTo(n) {
 // ---- overrides builder ----------------------------------------------------
 function buildOverrides() {
   const ov = { well_type: S.wellType, completion_type: S.completionType };
-  if (S.cementingCompany) ov.cementing_company = S.cementingCompany;
+  // Box 22 (cementing/plugging company): an explicit entry wins; otherwise
+  // fall back to the plugging company this filing was shared with.
+  const cementer = S.cementingCompany || S.sharedWith;
+  if (cementer) ov.cementing_company = cementer;
   if (S.sigName)  ov.operator_signature_name = S.sigName;
   if (S.sigTitle) ov.operator_title = S.sigTitle;
   if (S.certDate) ov.certification_date = S.certDate;
@@ -456,11 +460,18 @@ async function loadHandoff() {
   const box = el('handoff-box');
   if (!S.apiNumber || S.apiNumber === '42-000-00000') { hide(box); return; }
   try {
+    // If the filing has been shared with a plugging company, it has left the
+    // operator's desk — the live stage is "Plugging company review", and the
+    // named plugging company rides along so the workflow can label the holder.
+    const shared = !!S.sharedWith;
     const h = await apiJson('/api/handoff', {
-      api_number: S.apiNumber, stage: 'operator_review', form_type: 'w3a',
+      api_number: S.apiNumber,
+      stage: shared ? 'plugging_company_review' : 'operator_review',
+      form_type: 'w3a',
+      plugging_company: S.sharedWith || null,
       has_gau_letter: S.attach.gau, has_w15_plugging_permit: S.attach.w15,
       has_l1_well_log: S.attach.l1, has_p13_affidavit: S.attach.p13,
-      has_plugging_details: true, operator_certified: true,
+      has_plugging_details: true, operator_certified: !shared,
     });
     const status = h.can_advance
       ? `<div class="result-row"><span class="rlabel">Next</span><span class="hi">${esc(h.next_action)} → ${esc(h.next_holder_label)}</span></div>`
@@ -504,7 +515,8 @@ el('btn-restart').addEventListener('click', () => {
   Object.assign(S, {
     step: 1, apiNumber: '', wellData: null, buqwDepth: null, gauRef: null,
     aorFindings: [], aorGuidanceLoaded: false, wellType: 'oil',
-    completionType: 'single', cementingCompany: null, plugsComputed: false,
+    completionType: 'single', cementingCompany: null, sharedWith: null,
+    plugsComputed: false,
     attach: { gau: false, w15: false, l1: false, p13: false },
     sigName: '', sigTitle: 'Operator Representative', certDate: '', pdfUrl: null,
     maxStep: 1,
@@ -526,6 +538,12 @@ window.toast = toast;
 window.PlugfileWizard = {
   formType: 'w3a',
   title: () => `W-3A ${S.apiNumber || 'draft'}`,
+  // saves.js calls this with the filing's shared_with_email on load/share so
+  // the handoff stage + Box 22 reflect the plugging company.
+  setSharedWith: (email) => {
+    S.sharedWith = (email || '').trim().toLowerCase() || null;
+    if (S.step === 7) loadPackage();   // refresh the handoff card if on it
+  },
   getState: () => ({
     api: S.apiNumber, step: S.step,
     buqwDepth: S.buqwDepth, gauRef: S.gauRef,
