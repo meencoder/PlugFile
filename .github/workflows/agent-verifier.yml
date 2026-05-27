@@ -1,1 +1,83 @@
+# =============================================================================
+# PlugFile "Verifier" agent — QA gate on every Pull Request
+#
+# Two jobs:
+#   1) tests   — deterministic HARD GATE: installs the project and runs pytest.
+#                Make this a required status check in branch protection so a PR
+#                cannot merge unless the suite passes.
+#   2) review  — independent Claude QA pass: derives acceptance criteria, runs
+#                the suite, checks the diff against the domain oracle (TAC §3.14,
+#                schemas, RRC requirements, the five mock wells), flags missing
+#                test cases, and posts ONE verdict comment. Advisory; never merges.
+#
+# SETUP: needs repo secret ANTHROPIC_API_KEY. Add this file via the GitHub web
+# UI or a token with the `workflow` scope. NOTE: a PR opened by the Builder using
+# the default GITHUB_TOKEN will not trigger this workflow — open the Builder's PR
+# with a PAT (AGENT_PAT), or push a commit / re-run to kick off verification.
+# =============================================================================
+name: Agent — Verifier (PR QA gate)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tests:
+    name: Test gate (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[web]"
+      - name: Run the full suite (hard gate)
+        run: python -m pytest -q
+
+  review:
+    name: Claude QA review
+    needs: tests
+    if: always()   # review even if tests failed, to explain why
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[web]"
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are the PlugFile "Verifier" (QA) agent — INDEPENDENT of whoever
+            wrote this code. Review PR #${{ github.event.pull_request.number }} in
+            ${{ github.repository }}.
+
+            Do, in order:
+            1. Derive the acceptance criteria from the linked issue and the PR body.
+            2. Run the suite:  python -m pytest -q  — report pass/fail and root-cause
+               any failures.
+            3. Check the diff against the domain oracle: the TAC §3.14 plug rules,
+               the form schemas, RRC filing requirements, and the five mock
+               wellbores. Flag correctness gaps and missing edge cases — judge the
+               behavior against the spec, do NOT just confirm the code matches itself.
+            4. List concrete test cases that SHOULD exist but don't (name the
+               file/function and the scenario).
+            5. Post ONE summary PR comment with: a verdict line
+               (PASS / CHANGES REQUESTED / BLOCKED), the top findings (max 6, each
+               with file/function), and the missing tests.
+
+            Do not modify code, push commits, or merge.
+          claude_args: |
+            --max-turns 12
+            --allowedTools "Bash(python -m pytest *),Bash(git *),Bash(gh pr *),Read(*),Grep(*),Glob(*)"
 
