@@ -24,7 +24,6 @@
 # =============================================================================
 set -uo pipefail
 
-REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)"
 BUILDER="agent-builder.yml"
 VERIFIER="agent-verifier.yml"
 LABEL="agent:build"
@@ -35,8 +34,23 @@ die(){ printf '\033[31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ---- 1. pre-flight ----------------------------------------------------------
 say "1/5  Pre-flight checks"
-[ -n "$REPO" ] || die "gh can't see a repo. Run from the repo root and 'gh auth login'."
+# Determine the repo from the git remote (robust), falling back to gh.
+REPO="$(git remote get-url origin 2>/dev/null | sed -E 's#^(git@github.com:|https://[^/]*/)##; s#\.git$##')"
+[ -n "$REPO" ] || REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)"
+[ -n "$REPO" ] || die "Could not determine the repo. Run from the repo root (needs an 'origin' git remote)."
 echo "  repo: $REPO"
+
+# Confirm gh auth actually works (surfaces a bad/expired/typo'd token clearly).
+WHO="$(gh api user --jq .login 2>&1)"
+if ! gh api user --jq .login >/dev/null 2>&1; then
+  die "gh authentication failed: $WHO
+  -> Your token/login isn't working. Create a CLASSIC token (scopes: repo + workflow)
+     while signed in as the repo owner (meencoder), then:
+       Git Bash:   GH_TOKEN=ghp_xxx bash tools/dry_run_agents.sh
+       PowerShell: \$env:GH_TOKEN='ghp_xxx'; bash tools/dry_run_agents.sh
+     (or simply: gh auth login  — sign in as meencoder)"
+fi
+echo "  authenticated as: $WHO"
 
 PUSH="$(gh api "repos/$REPO" --jq '.permissions.push' 2>/dev/null)"
 [ "$PUSH" = "true" ] || die "Your gh account has only read access to $REPO (push=$PUSH).
