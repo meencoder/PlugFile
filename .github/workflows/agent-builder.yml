@@ -1,0 +1,90 @@
+# =============================================================================
+# PlugFile "Builder" agent — issue -> implementation -> Pull Request
+#
+# Label any GitHub Issue with `agent:build` (or run this workflow manually with
+# an issue number). Claude Code reads the issue, implements it on a branch,
+# runs the test suite, and opens a PR. Humans review + merge.
+#
+# SETUP (one-time):
+#   1) Add repo secret  ANTHROPIC_API_KEY  (Settings -> Secrets and variables -> Actions).
+#   2) Create the label `agent:build` (Issues -> Labels).
+#   3) This file must be added via the GitHub web UI or pushed with a token that
+#      has the `workflow` scope (the normal push token cannot add workflows).
+#   4) OPTIONAL — to make the Builder's PR automatically trigger the Verifier
+#      workflow, add a PAT secret `AGENT_PAT` (repo + workflow scope) and set
+#      `github_token: ${{ secrets.AGENT_PAT }}` on the claude step below. A PR
+#      opened with the default GITHUB_TOKEN will NOT trigger other workflows.
+# =============================================================================
+name: Agent — Builder (issue → PR)
+
+"on":
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to implement"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  build:
+    # only run for the trigger label, or for a manual dispatch
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent:build'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project (so the agent can run the test suite)
+        run: python -m pip install -e ".[web]"
+
+      - name: Resolve issue number
+        id: issue
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "n=${{ github.event.inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "n=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # To auto-trigger the Verifier on the resulting PR, swap in a PAT:
+          github_token: ${{ secrets.AGENT_PAT }}
+          prompt: |
+            You are the PlugFile "Builder" agent. Implement GitHub issue
+            #${{ steps.issue.outputs.n }} in ${{ github.repository }}.
+
+            Rules of engagement:
+            - Work ONLY on a new branch named `agent/issue-${{ steps.issue.outputs.n }}`.
+              Never commit to `main`.
+            - Follow CLAUDE.md and PLAN.md. Keep the change small and scoped strictly
+              to the issue's acceptance criteria.
+            - Add or update tests for the change. Then run the full suite with:
+                  python -m pytest -q
+              All tests must pass before you open the PR.
+            - For RRC/plugging logic, respect the §3.14 rules engine and the five
+              mock wellbores as the source of truth; do not weaken existing tests.
+            - Open a Pull Request to `main`. In the description: summarize the change
+              mapped to the acceptance criteria, note test results, and write
+              "Closes #${{ steps.issue.outputs.n }}".
+            - Call out explicitly in the PR if you touched .env, secrets, billing,
+              auth, or supabase/migrations — and never invent or expose secrets.
+            - If the issue is ambiguous or under-specified, do NOT guess: open a
+              draft PR (or comment on the issue) describing the ambiguity instead.
+          claude_args: |
+            --max-turns 25
+            --allowedTools "Bash(*),Read(*),Write(*),Edit(*),Glob(*),Grep(*)"
+            # add e.g.  --model claude-opus-4-7  to pin a stronger model
+
