@@ -17,7 +17,7 @@
 # =============================================================================
 name: Agent — Verifier (PR QA gate)
 
-on:
+"on":
   pull_request:
     types: [opened, synchronize, reopened]
 
