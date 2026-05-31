@@ -61,7 +61,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # To auto-trigger the Verifier on the resulting PR, swap in a PAT:
-          github_token: ${{ secrets.AGENT_PAT }}
+          # github_token: ${{ secrets.AGENT_PAT }}
           prompt: |
             You are the PlugFile "Builder" agent. Implement GitHub issue
             #${{ steps.issue.outputs.n }} in ${{ github.repository }}.
