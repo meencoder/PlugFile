@@ -32,6 +32,20 @@ ISSUE_TITLE="normalize_api_number() helper + validation"
 say(){ printf '\n\033[1m== %s\033[0m\n' "$*"; }
 die(){ printf '\033[31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
+# Make sure `gh` is on PATH. When bash is launched from PowerShell on Windows,
+# the GitHub CLI in Program Files isn't always inherited — find it ourselves.
+if ! command -v gh >/dev/null 2>&1; then
+  for p in "/c/Program Files/GitHub CLI/gh.exe" \
+           "/c/Program Files (x86)/GitHub CLI/gh.exe" \
+           "$HOME/AppData/Local/GitHubCLI/gh.exe" \
+           "$HOME/scoop/apps/gh/current/gh.exe"; do
+    if [ -x "$p" ]; then export PATH="$(dirname "$p"):$PATH"; break; fi
+  done
+fi
+command -v gh >/dev/null 2>&1 || die "gh CLI not found on PATH in this bash.
+  Easiest fix: open Git Bash directly (Start menu -> Git Bash) and re-run,
+  or add gh's install dir to your bash PATH."
+
 # ---- 1. pre-flight ----------------------------------------------------------
 say "1/5  Pre-flight checks"
 # Determine the repo from the git remote (robust), falling back to gh.
