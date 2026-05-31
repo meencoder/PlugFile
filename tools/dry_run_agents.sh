@@ -93,10 +93,12 @@ fi
 
 # ---- 2. ensure the test issue ----------------------------------------------
 say "2/5  Test issue"
-ISSUE_NUM="$(gh issue list --repo "$REPO" --state open --search "$ISSUE_TITLE in:title" --json number,title \
-  --jq ".[] | select(.title==\"$ISSUE_TITLE\") | .number" 2>/dev/null | head -1)"
+# Look for an existing open issue with this exact title under the agent:build label.
+ISSUE_NUM="$(gh issue list --repo "$REPO" --state open --label "$LABEL" --json number,title \
+  --jq "[.[] | select(.title == \"$ISSUE_TITLE\")] | .[0].number // empty" 2>/dev/null)"
 if [ -z "$ISSUE_NUM" ]; then
-  ISSUE_NUM="$(gh issue create --repo "$REPO" --title "$ISSUE_TITLE" --label "$LABEL" --body "$(cat <<'EOF'
+  # gh issue create prints just the new issue URL — capture and parse it.
+  URL="$(gh issue create --repo "$REPO" --title "$ISSUE_TITLE" --label "$LABEL" --body "$(cat <<'EOF'
 **Task.** Add a pure function `normalize_api_number(raw: str) -> str` (new module `src/plugfile/apinum.py`) that validates and canonicalizes a Texas RRC API number.
 
 **Acceptance criteria**
@@ -105,13 +107,17 @@ if [ -z "$ISSUE_NUM" ]; then
 - [ ] Pure function (no network/IO).
 - [ ] Unit tests in `tests/test_apinum.py` covering >=6 cases. Full suite stays green (`python -m pytest -q`).
 EOF
-)" --jq '.number' 2>/dev/null)"
-  # gh issue create prints a URL, not number, in some versions — fall back:
-  [ -z "$ISSUE_NUM" ] && ISSUE_NUM="$(gh issue list --repo "$REPO" --state open --search "$ISSUE_TITLE in:title" --json number --jq '.[0].number')"
+)" 2>&1)"
+  ISSUE_NUM="$(printf '%s\n' "$URL" | grep -oE '/issues/[0-9]+' | grep -oE '[0-9]+' | tail -1)"
+  [ -n "$ISSUE_NUM" ] || die "Failed to create the test issue. gh output:
+$URL"
   echo "  created issue #$ISSUE_NUM"
 else
   echo "  reusing existing issue #$ISSUE_NUM"
 fi
+case "$ISSUE_NUM" in
+  ''|*[!0-9]*) die "Could not determine the test issue number (got: '$ISSUE_NUM')." ;;
+esac
 
 # ---- 3. trigger Builder + wait ---------------------------------------------
 say "3/5  Builder (implement issue #$ISSUE_NUM -> PR)"
