@@ -24,6 +24,7 @@ name: Agent — Verifier (PR QA gate)
 permissions:
   contents: read
   pull-requests: write
+  id-token: write
 
 jobs:
   tests:
