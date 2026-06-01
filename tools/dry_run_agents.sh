@@ -20,7 +20,9 @@
 #   * The two workflows added to the repo (.github/workflows/agent-*.yml).
 #
 # This makes REAL runs (uses Claude API credits) and opens a REAL PR you can
-# review or close. Run from the repo root:  bash tools/dry_run_agents.sh
+# review or close. Run from the repo root:
+#   bash tools/dry_run_agents.sh                # default: normalize_api_number
+#   bash tools/dry_run_agents.sh 3              # dispatch on existing issue #3
 # =============================================================================
 set -uo pipefail
 
@@ -93,6 +95,19 @@ fi
 
 # ---- 2. ensure the test issue ----------------------------------------------
 say "2/5  Test issue"
+# Optional positional arg: an existing issue number to dispatch the Builder on
+# (otherwise default to find-or-create the normalize_api_number test issue).
+ISSUE_NUM=""
+if [ -n "${1:-}" ]; then
+  case "$1" in
+    ''|*[!0-9]*) die "First argument, if given, must be a positive integer issue number." ;;
+  esac
+  ISSUE_NUM="$1"
+  gh api "repos/$REPO/issues/$ISSUE_NUM" --jq .number >/dev/null 2>&1 \
+    || die "Issue #$ISSUE_NUM not found in $REPO."
+  echo "  using provided issue #$ISSUE_NUM"
+fi
+if [ -z "$ISSUE_NUM" ]; then
 # Look for an existing open issue with this exact title under the agent:build label.
 ISSUE_NUM="$(gh issue list --repo "$REPO" --state open --label "$LABEL" --json number,title \
   --jq "[.[] | select(.title == \"$ISSUE_TITLE\")] | .[0].number // empty" 2>/dev/null)"
@@ -115,6 +130,7 @@ $URL"
 else
   echo "  reusing existing issue #$ISSUE_NUM"
 fi
+fi  # end: only run find-or-create when no issue number was provided as an arg
 case "$ISSUE_NUM" in
   ''|*[!0-9]*) die "Could not determine the test issue number (got: '$ISSUE_NUM')." ;;
 esac
