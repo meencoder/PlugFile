@@ -43,7 +43,6 @@ fi
 command -v gh >/dev/null 2>&1 || die "gh CLI not on PATH in this bash.
   EASIEST FIX: open Git Bash directly (Start menu -> Git Bash) and re-run.
   Or run 'where.exe gh' in PowerShell, then add that folder to this bash's PATH."
-command -v jq >/dev/null 2>&1 || die "jq not on PATH. Install jq or run from Git Bash."
 
 # ---- Pre-flight -------------------------------------------------------------
 say "0/5  Pre-flight"
@@ -86,10 +85,12 @@ fi
 say "2/5  Bump workflow turn caps if needed"
 bump_caps() {
   local file="$1" old="$2" new="$3"
-  local resp sha content
-  resp="$(gh api "repos/$REPO/contents/$file" 2>/dev/null)" || { echo "  (could not fetch $file)"; return; }
-  sha="$(printf '%s' "$resp" | jq -r .sha)"
-  content="$(printf '%s' "$resp" | jq -r .content | base64 --decode)"
+  # Use gh's built-in --jq for sha, and the raw Accept header for content (no external jq needed).
+  local sha content
+  sha="$(gh api "repos/$REPO/contents/$file" --jq .sha 2>/dev/null)"
+  [ -n "$sha" ] || { echo "  (could not fetch sha for $file)"; return; }
+  content="$(gh api "repos/$REPO/contents/$file" -H "Accept: application/vnd.github.raw" 2>/dev/null)"
+  [ -n "$content" ] || { echo "  (could not fetch raw content of $file)"; return; }
   if printf '%s' "$content" | grep -qF -- "$old"; then
     local new_content b64
     new_content="$(printf '%s' "$content" | sed "s|$old|$new|")"
