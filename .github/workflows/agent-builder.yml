@@ -85,7 +85,7 @@ jobs:
             - If the issue is ambiguous or under-specified, do NOT guess: open a
               draft PR (or comment on the issue) describing the ambiguity instead.
           claude_args: |
-            --max-turns 25
+            --max-turns 60
             --allowedTools "Bash(*),Read(*),Write(*),Edit(*),Glob(*),Grep(*)"
             # add e.g.  --model claude-opus-4-7  to pin a stronger model
 
