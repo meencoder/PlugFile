@@ -20,6 +20,7 @@ PORT                     Bind port (default 8000). Set by Render automatically.
 from __future__ import annotations
 
 import os
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 from typing import Any, Optional
 
@@ -62,9 +63,16 @@ _STATIC = Path(__file__).parent / "static"
 # Fetcher selection
 # ---------------------------------------------------------------------------
 
+def _fetcher_mode() -> str:
+    """Return ``"live"`` when the RRC fetcher env flag is set, else ``"mock"``."""
+    if os.environ.get("PLUGFILE_RRC_LIVE", "").strip().lower() in ("1", "true", "yes"):
+        return "live"
+    return "mock"
+
+
 def _fetcher():
     """Return live RrcFetcher if env var set, else MockFetcher for dev/demo."""
-    if os.environ.get("PLUGFILE_RRC_LIVE", "").strip().lower() in ("1", "true", "yes"):
+    if _fetcher_mode() == "live":
         from plugfile.lookups_rrc import RRCRoRQFetcher
         return RRCRoRQFetcher()
     return MockFetcher()
@@ -588,6 +596,16 @@ def rules_status(user: AuthUser = Depends(require_user)):
     """
     from plugfile.rules_watch import latest_report
     return latest_report()
+
+
+@app.get("/api/health")
+def health():
+    """Liveness/version probe for deploy monitoring. Open in all auth modes."""
+    try:
+        ver = _pkg_version("plugfile")
+    except PackageNotFoundError:
+        ver = app.version
+    return {"status": "ok", "version": ver, "fetcher": _fetcher_mode()}
 
 
 @app.get("/api/auth/config")
