@@ -80,6 +80,6 @@ jobs:
 
             Do not modify code, push commits, or merge.
           claude_args: |
-            --max-turns 12
+            --max-turns 30
             --allowedTools "Bash(python -m pytest *),Bash(git *),Bash(gh pr *),Read(*),Grep(*),Glob(*)"
 
