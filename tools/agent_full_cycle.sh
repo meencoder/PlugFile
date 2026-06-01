@@ -24,16 +24,25 @@ LABEL="agent:build"
 say(){ printf '\n\033[1m== %s\033[0m\n' "$*"; }
 die(){ printf '\033[31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
-# Ensure gh is on PATH (same fix as dry_run_agents.sh).
+# Ensure gh is on PATH. PowerShell-spawned bash often doesn't inherit it.
 if ! command -v gh >/dev/null 2>&1; then
-  for p in "/c/Program Files/GitHub CLI/gh.exe" \
-           "/c/Program Files (x86)/GitHub CLI/gh.exe" \
-           "$HOME/AppData/Local/GitHubCLI/gh.exe" \
-           "$HOME/scoop/apps/gh/current/gh.exe"; do
+  # Quoted paths first (literal locations), then unquoted globs (winget installs).
+  for p in \
+    "/c/Program Files/GitHub CLI/gh.exe" \
+    "/c/Program Files (x86)/GitHub CLI/gh.exe" \
+    "$HOME/AppData/Local/Programs/GitHub CLI/gh.exe" \
+    "$HOME/AppData/Local/GitHubCLI/gh.exe" \
+    "$HOME/scoop/shims/gh.exe" \
+    "$HOME/scoop/apps/gh/current/gh.exe" \
+    $HOME/AppData/Local/Microsoft/WinGet/Packages/GitHub.cli_*/gh_*/bin/gh.exe \
+    /c/Users/*/AppData/Local/Microsoft/WinGet/Packages/GitHub.cli_*/gh_*/bin/gh.exe \
+  ; do
     if [ -x "$p" ]; then export PATH="$(dirname "$p"):$PATH"; break; fi
   done
 fi
-command -v gh >/dev/null 2>&1 || die "gh CLI not on PATH. Open Git Bash directly, or install gh."
+command -v gh >/dev/null 2>&1 || die "gh CLI not on PATH in this bash.
+  EASIEST FIX: open Git Bash directly (Start menu -> Git Bash) and re-run.
+  Or run 'where.exe gh' in PowerShell, then add that folder to this bash's PATH."
 command -v jq >/dev/null 2>&1 || die "jq not on PATH. Install jq or run from Git Bash."
 
 # ---- Pre-flight -------------------------------------------------------------
