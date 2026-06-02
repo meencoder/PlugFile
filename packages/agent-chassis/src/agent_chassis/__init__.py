@@ -12,6 +12,7 @@ from __future__ import annotations
 from .serialize import to_jsonable
 from .model import Model, AnthropicModel, GeminiModel
 from .toolloop import ToolLoopResult, run_tool_loop
+from .store import Store, InMemoryStore, SqliteStore, HasDedupKey
 
 __all__ = [
     "to_jsonable",
@@ -20,4 +21,8 @@ __all__ = [
     "GeminiModel",
     "ToolLoopResult",
     "run_tool_loop",
+    "Store",
+    "InMemoryStore",
+    "SqliteStore",
+    "HasDedupKey",
 ]
