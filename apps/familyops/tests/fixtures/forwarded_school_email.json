@@ -1,0 +1,13 @@
+{
+  "from": "Lincoln Elementary <office@lincoln.k12.example.org>",
+  "to": "maya@in.familyops.app",
+  "subject": "Reminder: 3rd Grade Field Trip Permission Slip Due Friday",
+  "text": "Dear Families,\n\nThis is a reminder that the permission slip and $14 fee for the 3rd grade field trip to the Science Museum are due this Friday, June 6. Please sign and return the attached form. Students without a signed slip cannot attend.\n\nThank you,\nMs. Alvarez\nLincoln Elementary Front Office",
+  "attachments": [
+    {
+      "name": "field_trip_permission.pdf",
+      "content_type": "application/pdf",
+      "content_length": 48213
+    }
+  ]
+}

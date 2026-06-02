@@ -24,7 +24,7 @@ ingest = [
   "msgraph-sdk>=1.0",               # Microsoft Graph (Outlook/Hotmail/Live)
   # IMAP (iCloud/Yahoo/AOL/ISP) uses stdlib imaplib — no extra dep
 ]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "httpx>=0.27"]  # httpx backs Starlette's TestClient
 
 # Resolve agent-chassis from the local workspace rather than an index.
 [tool.uv.sources]
