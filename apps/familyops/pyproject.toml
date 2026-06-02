@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "familyops"
+version = "0.0.1"
+description = "FamilyOps — AI family chief-of-staff. Cross-person, cross-provider household graph that turns school/health/finance noise into one daily brief."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Kareem" }]
+license = { text = "MIT" }
+dependencies = [
+  "agent-chassis",
+]
+
+[project.optional-dependencies]
+web = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+]
+ingest = [
+  "google-api-python-client>=2.0",  # Gmail API
+  "msgraph-sdk>=1.0",               # Microsoft Graph (Outlook/Hotmail/Live)
+  # IMAP (iCloud/Yahoo/AOL/ISP) uses stdlib imaplib — no extra dep
+]
+dev = ["pytest>=8"]
+
+# Resolve agent-chassis from the local workspace rather than an index.
+[tool.uv.sources]
+agent-chassis = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/familyops"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # One job per workspace member. As the repo grows, gate these behind
+        # path filters (dorny/paths-filter) so only affected members run —
+        # with one rule: a change under packages/** must run ALL apps, since
+        # they depend on the chassis.
+        package:
+          - packages/agent-chassis
+          - apps/familyops
+          - .                       # plugfile (root package)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync (member + dev extras)
+        working-directory: ${{ matrix.package }}
+        run: uv sync --extra dev || uv pip install -e ".[dev]" --system
+
+      - name: Lint
+        working-directory: ${{ matrix.package }}
+        run: uvx ruff check .
+
+      - name: Test
+        working-directory: ${{ matrix.package }}
+        run: uv run pytest -q
+
+  # Eval gate (FamilyOps): fails the build if extraction accuracy on the
+  # labeled school-email corpus drops below threshold. Wired once FO-3 lands.
+  evals:
+    runs-on: ubuntu-latest
+    if: false   # enable when apps/familyops/evals exists (backlog FO-3)
+    steps:
+      - run: echo "extraction eval gate placeholder"

@@ -52,3 +52,12 @@ testpaths = ["tests"]
 markers = [
     "live: marks tests that make real HTTP requests to rrc.texas.gov (skipped by default; enable with --live)",
 ]
+
+# --- Monorepo workspace -------------------------------------------------------
+# This repo is a uv workspace. `plugfile` is the ROOT package (unchanged build);
+# the shared kernel and the new app are members discovered below.
+#   packages/agent-chassis  — domain-free kernel (model, tool loop, serialize)
+#   apps/familyops          — AI family chief-of-staff MVP
+# Run `uv sync` at the repo root once uv is installed (see MONOREPO.md).
+[tool.uv.workspace]
+members = ["packages/*", "apps/*"]
